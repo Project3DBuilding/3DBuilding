@@ -3,25 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Хакерский терминал</title>
+    <title>Хакерский терминал Saito</title>
     <style>
         body {
             background-color: #0a0a0a;
             color: #00ff00;
             font-family: 'Courier New', monospace;
             margin: 0;
-            padding: 20px;
+            padding: 0;
             overflow-x: hidden;
+            position: relative;
+        }
+        
+        #matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.2;
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
             border: 1px solid #00ff00;
             padding: 20px;
             box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
             position: relative;
             overflow: hidden;
+            background: rgba(10, 15, 10, 0.9);
         }
         
         .scan-line {
@@ -60,15 +72,36 @@
             margin-bottom: 30px;
         }
         
+        .main-content {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
         .terminal {
+            flex: 2;
             background-color: rgba(0, 20, 0, 0.5);
             border: 1px solid #00cc00;
             padding: 20px;
-            margin-bottom: 20px;
-            height: 200px;
+            height: 300px;
             overflow-y: auto;
             font-family: 'Courier New', monospace;
             line-height: 1.5;
+        }
+        
+        .tools {
+            flex: 1;
+            background-color: rgba(0, 20, 0, 0.5);
+            border: 1px solid #00cc00;
+            padding: 15px;
+        }
+        
+        .tool-title {
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 1.1em;
         }
         
         .terminal-line {
@@ -152,6 +185,15 @@
             font-size: 0.9em;
         }
         
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 10px;
+            border-top: 1px solid #00cc00;
+            font-size: 0.9em;
+            color: #009900;
+        }
+        
         .blink {
             animation: blink 1s infinite;
         }
@@ -170,6 +212,32 @@
         .access-denied {
             color: #ff0000;
             text-shadow: 0 0 10px #ff0000;
+        }
+        
+        .tool-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0, 30, 0, 0.3);
+            border: 1px solid #008800;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .tool-item:hover {
+            background: rgba(0, 50, 0, 0.5);
+            box-shadow: 0 0 8px rgba(0, 255, 0, 0.4);
+        }
+        
+        .tool-item h3 {
+            margin: 0 0 8px 0;
+            font-size: 1em;
+            color: #00ff00;
+        }
+        
+        .tool-item p {
+            margin: 0;
+            font-size: 0.85em;
+            color: #00cc00;
         }
         
         ::selection {
@@ -193,23 +261,105 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #00ff00;
         }
+        
+        .ip-scanner, .port-scanner, .hash-generator {
+            display: none;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 20, 0, 0.5);
+            border: 1px solid #008800;
+        }
+        
+        .scanner-input {
+            width: calc(100% - 20px);
+            padding: 8px;
+            margin-bottom: 10px;
+            background: rgba(0, 10, 0, 0.7);
+            border: 1px solid #00aa00;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .scanner-btn {
+            background: #002200;
+            color: #00ff00;
+            border: 1px solid #00aa00;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .scanner-btn:hover {
+            background: #003300;
+        }
+        
+        .scanner-result {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0, 15, 0, 0.7);
+            border: 1px solid #008800;
+            font-size: 0.9em;
+            max-height: 150px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
+    <canvas id="matrix-bg"></canvas>
+    
     <div class="container">
         <div class="scan-line"></div>
         
         <div class="header">
-            <h1>СИСТЕМНЫЙ ТЕРМИНАЛ</h1>
-            <div class="subtitle">ВЕРСИЯ 2.4.7 // СЕКЬЮРИТИ ПРОТОКОЛ АКТИВЕН</div>
+            <h1>СИСТЕМНЫЙ ТЕРМИНАЛ SAITO</h1>
+            <div class="subtitle">ВЕРСИЯ 3.1.5 // СЕКЬЮРИТИ ПРОТОКОЛ АКТИВЕН</div>
         </div>
         
-        <div class="terminal" id="terminal">
-            <span class="terminal-line">> Инициализация системы...</span>
-            <span class="terminal-line">> Загрузка модулей безопасности...</span>
-            <span class="terminal-line">> Подключение к главному серверу...</span>
-            <span class="terminal-line">> Соединение установлено</span>
-            <span class="terminal-line">> Добро пожаловать, агент. Выберите операцию.</span>
+        <div class="main-content">
+            <div class="terminal" id="terminal">
+                <span class="terminal-line">> Инициализация системы...</span>
+                <span class="terminal-line">> Загрузка модулей безопасности...</span>
+                <span class="terminal-line">> Подключение к главному серверу...</span>
+                <span class="terminal-line">> Соединение установлено</span>
+                <span class="terminal-line">> Добро пожаловать, агент. Выберите операцию.</span>
+            </div>
+            
+            <div class="tools">
+                <div class="tool-title">ИНСТРУМЕНТЫ</div>
+                
+                <div class="tool-item" onclick="toggleTool('ip-scanner')">
+                    <h3>СКАНЕР IP-АДРЕСОВ</h3>
+                    <p>Определение местоположения и информации об IP</p>
+                </div>
+                
+                <div class="tool-item" onclick="toggleTool('port-scanner')">
+                    <h3>СКАНЕР ПОРТОВ</h3>
+                    <p>Проверка открытых портов на удаленном хосте</p>
+                </div>
+                
+                <div class="tool-item" onclick="toggleTool('hash-generator')">
+                    <h3>ГЕНЕРАТОР ХЭШЕЙ</h3>
+                    <p>Создание хэшей MD5, SHA-1, SHA-256</p>
+                </div>
+                
+                <div id="ip-scanner" class="ip-scanner">
+                    <input type="text" class="scanner-input" id="ip-input" placeholder="Введите IP-адрес">
+                    <button class="scanner-btn" onclick="scanIP()">Сканировать</button>
+                    <div class="scanner-result" id="ip-result"></div>
+                </div>
+                
+                <div id="port-scanner" class="port-scanner">
+                    <input type="text" class="scanner-input" id="host-input" placeholder="Введите хост или IP">
+                    <button class="scanner-btn" onclick="scanPorts()">Сканировать</button>
+                    <div class="scanner-result" id="port-result"></div>
+                </div>
+                
+                <div id="hash-generator" class="hash-generator">
+                    <input type="text" class="scanner-input" id="hash-input" placeholder="Введите текст">
+                    <button class="scanner-btn" onclick="generateHash()">Генерировать</button>
+                    <div class="scanner-result" id="hash-result"></div>
+                </div>
+            </div>
         </div>
         
         <input type="text" class="command-input" id="commandInput" placeholder="Введите команду...">
@@ -228,6 +378,10 @@
             <span>УРОВЕНЬ ДОСТУПА: <span id="accessLevel">7/10</span></span>
             <span>СЕРВЕР: <span id="serverStatus">ONLINE</span></span>
         </div>
+        
+        <div class="footer">
+            Powered By Saito | Версия 3.1.5 | Связь: saito-network@darkweb.jp
+        </div>
     </div>
 
     <script>
@@ -236,6 +390,45 @@
         const statusElement = document.getElementById('status');
         const accessLevelElement = document.getElementById('accessLevel');
         const serverStatusElement = document.getElementById('serverStatus');
+        
+        // Фон с эффектом матрицы
+        const canvas = document.getElementById('matrix-bg');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const letters = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const fontSize = 12;
+        const columns = canvas.width / fontSize;
+        
+        const drops = [];
+        for (let i = 0; i < columns; i++) {
+            drops[i] = 1;
+        }
+        
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#0F0';
+            ctx.font = `${fontSize}px monospace`;
+            
+            for (let i = 0; i < drops.length; i++) {
+                const text = letters[Math.floor(Math.random() * letters.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                
+                drops[i]++;
+            }
+            
+            requestAnimationFrame(drawMatrix);
+        }
+        
+        drawMatrix();
         
         // Фокус на поле ввода при загрузке страницы
         window.onload = function() {
@@ -377,6 +570,104 @@
             }, 1000);
         }
         
+        // Переключение инструментов
+        function toggleTool(toolId) {
+            const tools = document.querySelectorAll('.ip-scanner, .port-scanner, .hash-generator');
+            tools.forEach(tool => {
+                tool.style.display = 'none';
+            });
+            
+            const tool = document.getElementById(toolId);
+            if (tool.style.display === 'block') {
+                tool.style.display = 'none';
+            } else {
+                tool.style.display = 'block';
+            }
+        }
+        
+        // Сканирование IP
+        function scanIP() {
+            const ip = document.getElementById('ip-input').value;
+            if (!ip) {
+                document.getElementById('ip-result').innerHTML = '> ОШИБКА: Введите IP-адрес';
+                return;
+            }
+            
+            document.getElementById('ip-result').innerHTML = '> Сканирование IP: ' + ip + '...';
+            
+            setTimeout(() => {
+                const isp = ['Rostelecom', 'Beeline', 'MTS', 'Megafon', 'Tele2'][Math.floor(Math.random() * 5)];
+                const country = ['Россия', 'США', 'Германия', 'Китай', 'Япония'][Math.floor(Math.random() * 5)];
+                const city = ['Москва', 'Санкт-Петербург', 'Новосибирск', 'Екатеринбург', 'Казань'][Math.floor(Math.random() * 5)];
+                
+                let result = '> Результаты сканирования IP: ' + ip + '<br>';
+                result += '> Провайдер: ' + isp + '<br>';
+                result += '> Страна: ' + country + '<br>';
+                result += '> Город: ' + city + '<br>';
+                result += '> Координаты: ' + (Math.random() * 90).toFixed(4) + '°N, ' + (Math.random() * 180).toFixed(4) + '°E<br>';
+                result += '> Сканирование завершено';
+                
+                document.getElementById('ip-result').innerHTML = result;
+            }, 2000);
+        }
+        
+        // Сканирование портов
+        function scanPorts() {
+            const host = document.getElementById('host-input').value;
+            if (!host) {
+                document.getElementById('port-result').innerHTML = '> ОШИБКА: Введите хост или IP';
+                return;
+            }
+            
+            document.getElementById('port-result').innerHTML = '> Сканирование портов ' + host + '...';
+            
+            setTimeout(() => {
+                const openPorts = [];
+                for (let i = 0; i < 10; i++) {
+                    if (Math.random() > 0.7) {
+                        const port = Math.floor(Math.random() * 1000) + 1;
+                        if (!openPorts.includes(port)) openPorts.push(port);
+                    }
+                }
+                
+                let result = '> Результаты сканирования портов: ' + host + '<br>';
+                if (openPorts.length > 0) {
+                    result += '> Открытые порты: ' + openPorts.join(', ') + '<br>';
+                } else {
+                    result += '> Открытые порты не обнаружены<br>';
+                }
+                result += '> Сканирование завершено';
+                
+                document.getElementById('port-result').innerHTML = result;
+            }, 3000);
+        }
+        
+        // Генерация хэшей
+        function generateHash() {
+            const text = document.getElementById('hash-input').value;
+            if (!text) {
+                document.getElementById('hash-result').innerHTML = '> ОШИБКА: Введите текст';
+                return;
+            }
+            
+            document.getElementById('hash-result').innerHTML = '> Генерация хэшей...';
+            
+            setTimeout(() => {
+                // Простая имитация хэширования (не использовать в реальных проектах!)
+                const md5 = btoa(text).substring(0, 32);
+                const sha1 = btoa(text + 'salt1').substring(0, 40);
+                const sha256 = btoa(text + 'salt2').substring(0, 64);
+                
+                let result = '> Хэши для: ' + text + '<br>';
+                result += '> MD5: ' + md5 + '<br>';
+                result += '> SHA-1: ' + sha1 + '<br>';
+                result += '> SHA-256: ' + sha256 + '<br>';
+                result += '> Генерация завершена';
+                
+                document.getElementById('hash-result').innerHTML = result;
+            }, 1500);
+        }
+        
         // Случайные мерцания статуса для эффекта
         setInterval(() => {
             if (Math.random() > 0.8) {
@@ -392,6 +683,12 @@
                 }
             }
         }, 3000);
+        
+        // Изменение размера canvas при изменении размера окна
+        window.addEventListener('resize', function() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
     </script>
 </body>
 </html>
