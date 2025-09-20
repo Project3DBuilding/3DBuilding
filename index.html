@@ -1,53 +1,132 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR Макет для телефона и планшета</title>
+    <title>3D Building AR Project</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
+        body { 
+            margin: 0; 
+            overflow: hidden; 
             font-family: Arial, sans-serif;
-            overflow: hidden;
         }
         .instruction {
             position: absolute;
             bottom: 20px;
-            left: 0;
-            right: 0;
+            left: 20px;
+            right: 20px;
             text-align: center;
             color: white;
-            background-color: rgba(0, 0, 0, 0.6);
-            padding: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 15px;
             z-index: 1000;
         }
-        a {
-            color: #4fc3f7;
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            background: rgba(0,0,0,0.7);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .quality-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 1000;
         }
     </style>
 </head>
 <body>
-    <!-- AR-сцена -->
-    <a-scene embedded arjs='sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3;' renderer="logarithmicDepthBuffer: true;">
+    <!-- Кнопка переключения качества -->
+    <button class="quality-btn" onclick="toggleQuality()">Высокое качество</button>
+    
+    <!-- AR сцена с улучшенными настройками -->
+    <a-scene 
+        embedded 
+        arjs=' 
+            sourceType: webcam;
+            detectionMode: mono_and_matrix;
+            matrixCodeType: 3x3;
+            maxDetectionRate: 60;
+            cameraParametersUrl: https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/data/camera_para.dat;
+        '
+        renderer="colorManagement: true; precision: high;"
+        vr-mode-ui="enabled: false"
+    >
         
-        <!-- Маркер Hiro -->
-        <a-marker type="barcode" value="5">
-            <!-- Простая 3D-модель (куб) -->
-            <a-box position="0 0.5 0" material="color: #42A5F5;" scale="0.5 0.5 0.5" animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"></a-box>
+        <!-- Улучшенный маркер с большей зоной распознавания -->
+        <a-marker 
+            type="pattern" 
+            preset="custom"
+            url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/data/patt.hiro"
+            smooth="true"
+            smoothCount="10"
+            smoothTolerance="0.01"
+            smoothThreshold="5"
+        >
+            <!-- 3D модель с улучшенными материалами -->
+            <a-entity 
+                gltf-model="url(https://cdn.jsdelivr.net/gh/Project3DBuilding/3DBuilding@main/building.glb)"
+                scale="0.3 0.3 0.3"
+                position="0 0.5 0"
+                rotation="0 180 0"
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear"
+            >
+            </a-entity>
         </a-marker>
         
-        <!-- Статическая камера -->
-        <a-entity camera></a-entity>
+        <!-- Камера с ручной настройкой -->
+        <a-entity camera="fov: 60; far: 10000; near: 0.1;"></a-entity>
+        
     </a-scene>
     
     <div class="instruction">
-        <h2>Инструкция по использованию AR</h2>
-        <p>1. Разрешите доступ к камере</p>
-        <p>2. Наведите камеру на <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank">маркер Hiro</a></p>
-        <p>3. Наслаждайтесь 3D-объектом!</p>
+        <h3>🔍 Как использовать:</h3>
+        <p>1. Распечатайте <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" style="color: #4fc3f7;">маркер Hiro</a></p>
+        <p>2. Хорошее освещение 📸</p>
+        <p>3. Держите телефон steady 🪄</p>
+        <p>4. Наведите на маркер с расстояния 30-50 см</p>
     </div>
+
+    <script>
+        let highQuality = false;
+        
+        function toggleQuality() {
+            highQuality = !highQuality;
+            const scene = document.querySelector('a-scene');
+            const button = document.querySelector('.quality-btn');
+            
+            if (highQuality) {
+                scene.renderer.setPixelRatio(2);
+                scene.renderer.setPrecision('high');
+                button.textContent = 'Обычное качество';
+                console.log('Включено высокое качество');
+            } else {
+                scene.renderer.setPixelRatio(1);
+                scene.renderer.setPrecision('medium');
+                button.textContent = 'Высокое качество';
+                console.log('Обычное качество');
+            }
+        }
+        
+        // Автоматическая настройка под устройство
+        document.querySelector('a-scene').addEventListener('loaded', function() {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+                document.querySelector('a-entity[camera]').setAttribute('camera', 'fov: 70; far: 5000;');
+            }
+        });
+    </script>
 </body>
 </html>
