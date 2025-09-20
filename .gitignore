@@ -1,0 +1,22 @@
+# Конфиденциальные данные
+config.json
+secrets.js
+.env
+*.key
+*.pem
+
+# Локальные настройки
+.DS_Store
+Thumbs.db
+
+# Логи
+*.log
+npm-debug.log*
+
+# Временные файлы
+.tmp/
+temp/
+
+# Файлы IDE
+.vscode/
+.idea/
