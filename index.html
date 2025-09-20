@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Хакерский терминал Saito</title>
+    <title>Хакерский терминал</title>
     <style>
         body {
             background-color: #0a0a0a;
@@ -26,7 +26,7 @@
         }
         
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
             border: 1px solid #00ff00;
             padding: 20px;
@@ -262,7 +262,7 @@
             background: #00ff00;
         }
         
-        .ip-scanner, .port-scanner, .hash-generator {
+        .ip-scanner, .port-scanner, .hash-generator, .password-checker, .text-encoder, .network-simulator {
             display: none;
             margin-top: 15px;
             padding: 10px;
@@ -302,6 +302,38 @@
             max-height: 150px;
             overflow-y: auto;
         }
+        
+        .password-strength {
+            height: 10px;
+            margin-top: 10px;
+            background: #002200;
+            border: 1px solid #008800;
+        }
+        
+        .password-strength-fill {
+            height: 100%;
+            width: 0%;
+            background: #00ff00;
+            transition: width 0.5s;
+        }
+        
+        .crypto-result {
+            word-break: break-all;
+        }
+        
+        .network-node {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin: 5px;
+            background: #008800;
+        }
+        
+        .network-node.active {
+            background: #00ff00;
+            box-shadow: 0 0 8px #00ff00;
+        }
     </style>
 </head>
 <body>
@@ -311,21 +343,21 @@
         <div class="scan-line"></div>
         
         <div class="header">
-            <h1>СИСТЕМНЫЙ ТЕРМИНАЛ SAITO</h1>
-            <div class="subtitle">ВЕРСИЯ 3.1.5 // СЕКЬЮРИТИ ПРОТОКОЛ АКТИВЕН</div>
+            <h1>КВАНТОВЫЙ ТЕРМИНАЛ ДОСТУПА</h1>
+            <div class="subtitle">ВЕРСИЯ 4.7.2 // СИСТЕМА КРИПТОЗАЩИТЫ АКТИВИРОВАНА</div>
         </div>
         
         <div class="main-content">
             <div class="terminal" id="terminal">
-                <span class="terminal-line">> Инициализация системы...</span>
-                <span class="terminal-line">> Загрузка модулей безопасности...</span>
-                <span class="terminal-line">> Подключение к главному серверу...</span>
-                <span class="terminal-line">> Соединение установлено</span>
-                <span class="terminal-line">> Добро пожаловать, агент. Выберите операцию.</span>
+                <span class="terminal-line">> Инициализация квантовой системы защиты...</span>
+                <span class="terminal-line">> Загрузка модулей искусственного интеллекта...</span>
+                <span class="terminal-line">> Подключение к нейросетевому интерфейсу...</span>
+                <span class="terminal-line">> Квантовое соединение установлено</span>
+                <span class="terminal-line">> Добро пожаловать, оператор. Система готова к работе.</span>
             </div>
             
             <div class="tools">
-                <div class="tool-title">ИНСТРУМЕНТЫ</div>
+                <div class="tool-title">ИНСТРУМЕНТАРИЙ</div>
                 
                 <div class="tool-item" onclick="toggleTool('ip-scanner')">
                     <h3>СКАНЕР IP-АДРЕСОВ</h3>
@@ -340,6 +372,21 @@
                 <div class="tool-item" onclick="toggleTool('hash-generator')">
                     <h3>ГЕНЕРАТОР ХЭШЕЙ</h3>
                     <p>Создание хэшей MD5, SHA-1, SHA-256</p>
+                </div>
+                
+                <div class="tool-item" onclick="toggleTool('password-checker')">
+                    <h3>АНАЛИЗАТОР ПАРОЛЕЙ</h3>
+                    <p>Проверка надежности ваших паролей</p>
+                </div>
+                
+                <div class="tool-item" onclick="toggleTool('text-encoder')">
+                    <h3>ШИФРОВАЛЬЩИК ТЕКСТА</h3>
+                    <p>Кодирование и декодирование текста</p>
+                </div>
+                
+                <div class="tool-item" onclick="toggleTool('network-simulator')">
+                    <h3>СЕТЕВОЙ СИМУЛЯТОР</h3>
+                    <p>Визуализация сетевой активности</p>
                 </div>
                 
                 <div id="ip-scanner" class="ip-scanner">
@@ -359,6 +406,27 @@
                     <button class="scanner-btn" onclick="generateHash()">Генерировать</button>
                     <div class="scanner-result" id="hash-result"></div>
                 </div>
+                
+                <div id="password-checker" class="password-checker">
+                    <input type="text" class="scanner-input" id="password-input" placeholder="Введите пароль">
+                    <button class="scanner-btn" onclick="checkPassword()">Проверить</button>
+                    <div class="password-strength"><div id="password-strength-fill" class="password-strength-fill"></div></div>
+                    <div class="scanner-result" id="password-result"></div>
+                </div>
+                
+                <div id="text-encoder" class="text-encoder">
+                    <input type="text" class="scanner-input" id="encode-input" placeholder="Введите текст">
+                    <button class="scanner-btn" onclick="encodeText()">Зашифровать</button>
+                    <button class="scanner-btn" onclick="decodeText()">Расшифровать</button>
+                    <div class="scanner-result crypto-result" id="encode-result"></div>
+                </div>
+                
+                <div id="network-simulator" class="network-simulator">
+                    <button class="scanner-btn" onclick="startNetworkSim()">Запуск симуляции</button>
+                    <div class="scanner-result" id="network-result">
+                        <div id="network-visualization"></div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -366,21 +434,23 @@
         
         <div class="controls">
             <button class="btn" onclick="runCommand('scan')">Сканирование сети</button>
-            <button class="btn" onclick="runCommand('encrypt')">Шифрование</button>
+            <button class="btn" onclick="runCommand('crypto')">Криптоанализ</button>
+            <button class="btn" onclick="runCommand('firewall')">Обход защиты</button>
             <button class="btn" onclick="runCommand('decrypt')">Дешифровка</button>
             <button class="btn" onclick="runCommand('brute')">Подбор пароля</button>
-            <button class="btn" onclick="runCommand('firewall')">Обход защиты</button>
+            <button class="btn" onclick="runCommand('ddos')">Тест нагрузки</button>
+            <button class="btn" onclick="runCommand('stealth')">Скрытый режим</button>
             <button class="btn" onclick="runCommand('clear')">Очистить терминал</button>
         </div>
         
         <div class="status-bar">
-            <span>СТАТУС: <span id="status" class="access-granted">ПОДКЛЮЧЕНО</span></span>
-            <span>УРОВЕНЬ ДОСТУПА: <span id="accessLevel">7/10</span></span>
-            <span>СЕРВЕР: <span id="serverStatus">ONLINE</span></span>
+            <span>СТАТУС: <span id="status" class="access-granted">АКТИВИРОВАНО</span></span>
+            <span>УРОВЕНЬ ЗАЩИТЫ: <span id="accessLevel">9/10</span></span>
+            <span>СЕТЬ: <span id="serverStatus">СТАБИЛЬНАЯ</span></span>
         </div>
         
         <div class="footer">
-            Powered By Saito | Версия 3.1.5 | Связь: saito-network@darkweb.jp
+            Powered By Quantum Terminal System | Версия 4.7.2 | Защищённое соединение
         </div>
     </div>
 
@@ -452,13 +522,16 @@
             cmd = cmd.toLowerCase();
             
             if (cmd === 'help') {
-                addTerminalLine('Доступные команды: scan, encrypt, decrypt, brute, firewall, clear');
+                addTerminalLine('Доступные команды: scan, crypto, firewall, decrypt, brute, ddos, stealth, clear');
             } 
             else if (cmd === 'scan') {
                 simulateScan();
             }
-            else if (cmd === 'encrypt') {
-                simulateEncryption();
+            else if (cmd === 'crypto') {
+                simulateCryptoAnalysis();
+            }
+            else if (cmd === 'firewall') {
+                simulateFirewallBypass();
             }
             else if (cmd === 'decrypt') {
                 simulateDecryption();
@@ -466,8 +539,11 @@
             else if (cmd === 'brute') {
                 simulateBruteForce();
             }
-            else if (cmd === 'firewall') {
-                simulateFirewallBypass();
+            else if (cmd === 'ddos') {
+                simulateDDoSTest();
+            }
+            else if (cmd === 'stealth') {
+                simulateStealthMode();
             }
             else if (cmd === 'clear') {
                 clearTerminal();
@@ -502,57 +578,29 @@
         
         // Симуляция сканирования сети
         function simulateScan() {
-            addTerminalLine('> Запуск сканирования сети...');
+            addTerminalLine('> Запуск глубокого сканирования сети...');
             
             setTimeout(() => {
-                addTerminalLine('> Обнаружено 12 активных узлов');
-                addTerminalLine('> Уязвимости найдены в узлах: 3, 7, 9');
-                addTerminalLine('> Сканирование завершено');
+                addTerminalLine('> Обнаружено 47 активных узлов');
+                addTerminalLine('> Критические уязвимости в узлах: 7, 12, 19, 33');
+                addTerminalLine('> Сканирование завершено. Рекомендуется патч 0x7F3A');
             }, 1000);
         }
         
-        // Симуляция шифрования
-        function simulateEncryption() {
-            addTerminalLine('> Инициализация протокола шифрования...');
+        // Симуляция криптоанализа
+        function simulateCryptoAnalysis() {
+            addTerminalLine('> Инициализация квантового криптоанализа...');
             
             setTimeout(() => {
-                addTerminalLine('> Генерация ключа: ****************');
-                addTerminalLine('> Применение алгоритма AES-256...');
-                addTerminalLine('> Шифрование завершено успешно');
+                addTerminalLine('> Анализ алгоритмов шифрования...');
+                addTerminalLine('> Обнаружены слабые места в RSA-1024');
+                addTerminalLine('> Криптоанализ завершен. Уязвимости экспортированы');
             }, 1500);
-        }
-        
-        // Симуляция дешифровки
-        function simulateDecryption() {
-            addTerminalLine('> Попытка дешифровки...');
-            
-            setTimeout(() => {
-                addTerminalLine('> Анализ зашифрованных данных...');
-                addTerminalLine('> Подбор ключа: 34%...67%...100%');
-                addTerminalLine('> Дешифровка выполнена успешно');
-            }, 2000);
-        }
-        
-        // Симуляция подбора пароля
-        function simulateBruteForce() {
-            addTerminalLine('> Запуск брутфорс-атаки...');
-            
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += Math.floor(Math.random() * 15);
-                if (progress >= 100) {
-                    clearInterval(interval);
-                    addTerminalLine('> Подбор завершен: пароль обнаружен - "Shadow5432!"');
-                    addTerminalLine('> Доступ получен');
-                } else {
-                    addTerminalLine('> Прогресс: ' + progress + '%');
-                }
-            }, 500);
         }
         
         // Симуляция обхода защиты
         function simulateFirewallBypass() {
-            addTerminalLine('> Обход межсетевого экрана...');
+            addTerminalLine('> Обход системы защиты...');
             
             setTimeout(() => {
                 addTerminalLine('> Поиск уязвимостей в конфигурации...');
@@ -564,15 +612,75 @@
                     setTimeout(() => {
                         addTerminalLine('> Межсетевой экран успешно обойден');
                         statusElement.textContent = 'ПОВЫШЕННЫЙ ДОСТУП';
-                        accessLevelElement.textContent = '9/10';
+                        accessLevelElement.textContent = '10/10';
                     }, 1000);
                 }, 1000);
             }, 1000);
         }
         
+        // Симуляция дешифровки
+        function simulateDecryption() {
+            addTerminalLine('> Попытка дешифровки зашифрованных данных...');
+            
+            setTimeout(() => {
+                addTerminalLine('> Анализ зашифрованных данных...');
+                addTerminalLine('> Подбор ключа: 34%...67%...100%');
+                addTerminalLine('> Дешифровка выполнена успешно. Данные экспортированы');
+            }, 2000);
+        }
+        
+        // Симуляция подбора пароля
+        function simulateBruteForce() {
+            addTerminalLine('> Запуск адаптивной брутфорс-атаки...');
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 15);
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    addTerminalLine('> Подбор завершен: пароль обнаружен - "Quantum5432!"');
+                    addTerminalLine('> Получен полный доступ к системе');
+                } else {
+                    addTerminalLine('> Прогресс: ' + progress + '%');
+                }
+            }, 500);
+        }
+        
+        // Симуляция теста нагрузки
+        function simulateDDoSTest() {
+            addTerminalLine('> Запуск распределенной атаки...');
+            
+            setTimeout(() => {
+                addTerminalLine('> Отправка пакетов на целевой сервер...');
+                
+                let packets = 0;
+                const interval = setInterval(() => {
+                    packets += Math.floor(Math.random() * 1000);
+                    if (packets >= 10000) {
+                        clearInterval(interval);
+                        addTerminalLine('> Атака завершена. Сервер не отвечает');
+                    } else {
+                        addTerminalLine('> Отправлено пакетов: ' + packets);
+                    }
+                }, 300);
+            }, 1000);
+        }
+        
+        // Симуляция скрытого режима
+        function simulateStealthMode() {
+            addTerminalLine('> Активация режима невидимости...');
+            
+            setTimeout(() => {
+                addTerminalLine('> Маскировка IP-адреса...');
+                addTerminalLine('> Шифрование трафика...');
+                addTerminalLine('> Удаление логов...');
+                addTerminalLine('> Режим невидимости активирован. Отслеживание невозможно');
+            }, 1500);
+        }
+        
         // Переключение инструментов
         function toggleTool(toolId) {
-            const tools = document.querySelectorAll('.ip-scanner, .port-scanner, .hash-generator');
+            const tools = document.querySelectorAll('.ip-scanner, .port-scanner, .hash-generator, .password-checker, .text-encoder, .network-simulator');
             tools.forEach(tool => {
                 tool.style.display = 'none';
             });
@@ -633,6 +741,7 @@
                 let result = '> Результаты сканирования портов: ' + host + '<br>';
                 if (openPorts.length > 0) {
                     result += '> Открытые порты: ' + openPorts.join(', ') + '<br>';
+                    result += '> Рекомендуется: закрыть порты ' + openPorts[0] + ', ' + openPorts[1] + '<br>';
                 } else {
                     result += '> Открытые порты не обнаружены<br>';
                 }
@@ -666,6 +775,108 @@
                 
                 document.getElementById('hash-result').innerHTML = result;
             }, 1500);
+        }
+        
+        // Проверка пароля
+        function checkPassword() {
+            const password = document.getElementById('password-input').value;
+            if (!password) {
+                document.getElementById('password-result').innerHTML = '> ОШИБКА: Введите пароль';
+                return;
+            }
+            
+            document.getElementById('password-result').innerHTML = '> Анализ пароля...';
+            
+            setTimeout(() => {
+                // Простой анализ сложности пароля
+                let strength = 0;
+                let feedback = '';
+                
+                if (password.length >= 8) strength += 25;
+                if (/[A-Z]/.test(password)) strength += 25;
+                if (/[0-9]/.test(password)) strength += 25;
+                if (/[^A-Za-z0-9]/.test(password)) strength += 25;
+                
+                if (strength < 50) {
+                    feedback = '> Слабый пароль. Рекомендуется использовать буквы в верхнем и нижнем регистре, цифры и специальные символы.';
+                } else if (strength < 75) {
+                    feedback = '> Средний пароль. Попробуйте увеличить длину и добавить специальные символы.';
+                } else {
+                    feedback = '> Сильный пароль. Хорошая работа!';
+                }
+                
+                document.getElementById('password-strength-fill').style.width = strength + '%';
+                document.getElementById('password-result').innerHTML = '> Надёжность пароля: ' + strength + '%<br>' + feedback;
+            }, 1000);
+        }
+        
+        // Шифрование текста
+        function encodeText() {
+            const text = document.getElementById('encode-input').value;
+            if (!text) {
+                document.getElementById('encode-result').innerHTML = '> ОШИБКА: Введите текст';
+                return;
+            }
+            
+            document.getElementById('encode-result').innerHTML = '> Шифрование...';
+            
+            setTimeout(() => {
+                const encoded = btoa(unescape(encodeURIComponent(text)));
+                document.getElementById('encode-result').innerHTML = '> Зашифрованный текст:<br>' + encoded;
+            }, 1000);
+        }
+        
+        // Дешифрование текста
+        function decodeText() {
+            const text = document.getElementById('encode-input').value;
+            if (!text) {
+                document.getElementById('encode-result').innerHTML = '> ОШИБКА: Введите текст';
+                return;
+            }
+            
+            document.getElementById('encode-result').innerHTML = '> Дешифрование...';
+            
+            setTimeout(() => {
+                try {
+                    const decoded = decodeURIComponent(escape(atob(text)));
+                    document.getElementById('encode-result').innerHTML = '> Расшифрованный текст:<br>' + decoded;
+                } catch (e) {
+                    document.getElementById('encode-result').innerHTML = '> ОШИБКА: Неверный формат шифрованного текста';
+                }
+            }, 1000);
+        }
+        
+        // Симуляция сети
+        function startNetworkSim() {
+            const networkVis = document.getElementById('network-visualization');
+            networkVis.innerHTML = '';
+            
+            for (let i = 0; i < 50; i++) {
+                const node = document.createElement('div');
+                node.className = 'network-node';
+                networkVis.appendChild(node);
+            }
+            
+            const nodes = document.querySelectorAll('.network-node');
+            let count = 0;
+            
+            const interval = setInterval(() => {
+                if (count >= 20) {
+                    clearInterval(interval);
+                    return;
+                }
+                
+                const randomNode = Math.floor(Math.random() * nodes.length);
+                nodes[randomNode].classList.add('active');
+                
+                setTimeout(() => {
+                    nodes[randomNode].classList.remove('active');
+                }, 800);
+                
+                count++;
+            }, 200);
+            
+            document.getElementById('network-result').innerHTML = '<div>Имитация сетевой активности:</div>' + networkVis.outerHTML;
         }
         
         // Случайные мерцания статуса для эффекта
