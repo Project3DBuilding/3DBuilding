@@ -3,814 +3,395 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Космическая панель DeepSeek-V3</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Хакерский терминал</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        :root {
-            --primary: #0a0a2a;
-            --secondary: #1a1a4a;
-            --accent: #00f3ff;
-            --accent-dark: #0066ff;
-            --text: #ffffff;
-            --text-secondary: #a0a0d0;
-            --danger: #ff2965;
-            --success: #00ff9d;
-            --warning: #ffcc00;
-        }
-
         body {
-            background: linear-gradient(135deg, #050518 0%, #1a1a40 100%);
-            color: var(--text);
-            min-height: 100vh;
+            background-color: #0a0a0a;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
             overflow-x: hidden;
         }
-
+        
         .container {
-            display: grid;
-            grid-template-columns: 250px 1fr;
-            grid-template-rows: 70px 1fr 40px;
-            grid-template-areas:
-                "header header"
-                "sidebar main"
-                "footer footer";
-            height: 100vh;
-        }
-
-        /* Header Styles */
-        header {
-            grid-area: header;
-            background: rgba(10, 10, 30, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 30px;
-            z-index: 100;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .logo i {
-            color: var(--accent);
-            animation: pulse 2s infinite;
-        }
-
-        .search-bar {
-            display: flex;
-            align-items: center;
-            background: rgba(20, 20, 50, 0.6);
-            border-radius: 30px;
-            padding: 8px 20px;
-            width: 400px;
-            border: 1px solid var(--accent-dark);
-        }
-
-        .search-bar input {
-            background: transparent;
-            border: none;
-            color: var(--text);
-            width: 100%;
-            outline: none;
-            font-size: 1rem;
-        }
-
-        .search-bar i {
-            color: var(--accent);
-            margin-right: 10px;
-        }
-
-        .user-actions {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .notification {
+            max-width: 900px;
+            margin: 0 auto;
+            border: 1px solid #00ff00;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
             position: relative;
-            cursor: pointer;
-        }
-
-        .notification i {
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-        }
-
-        .notification-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: var(--danger);
-            color: white;
-            font-size: 0.7rem;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, var(--accent-dark), var(--accent));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        /* Sidebar Styles */
-        .sidebar {
-            grid-area: sidebar;
-            background: rgba(15, 15, 35, 0.8);
-            backdrop-filter: blur(10px);
-            border-right: 1px solid var(--accent);
-            padding: 20px 0;
-            overflow-y: auto;
-        }
-
-        .sidebar-menu {
-            list-style: none;
-        }
-
-        .menu-item {
-            padding: 15px 30px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            color: var(--text-secondary);
-        }
-
-        .menu-item:hover {
-            background: rgba(30, 30, 70, 0.5);
-            color: var(--accent);
-        }
-
-        .menu-item.active {
-            background: rgba(0, 243, 255, 0.1);
-            color: var(--accent);
-            border-left: 4px solid var(--accent);
-        }
-
-        .menu-item i {
-            font-size: 1.2rem;
-        }
-
-        .menu-label {
-            margin: 20px 30px 10px;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            color: var(--accent);
-            letter-spacing: 1px;
-        }
-
-        /* Main Content Styles */
-        main {
-            grid-area: main;
-            padding: 30px;
-            overflow-y: auto;
-            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="rgba(10, 10, 30, 0.2)" width="100" height="100"/><path d="M0 0L100 100" stroke="rgba(0, 243, 255, 0.05)" stroke-width="1"/><path d="M100 0L0 100" stroke="rgba(0, 243, 255, 0.05)" stroke-width="1"/></svg>');
-        }
-
-        .dashboard-title {
-            font-size: 1.8rem;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .dashboard-title i {
-            color: var(--accent);
-        }
-
-        .stats-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, rgba(10, 10, 40, 0.8), rgba(30, 30, 70, 0.8));
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(0, 243, 255, 0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent);
-        }
-
-        .stat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .stat-title {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        .stat-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 243, 255, 0.1);
-            color: var(--accent);
-        }
-
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .stat-change {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.9rem;
-        }
-
-        .positive {
-            color: var(--success);
-        }
-
-        .negative {
-            color: var(--danger);
-        }
-
-        .charts-container {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .chart-card {
-            background: rgba(15, 15, 35, 0.8);
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(0, 243, 255, 0.1);
-        }
-
-        .chart-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .chart-title {
-            font-size: 1.2rem;
-        }
-
-        .chart-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .chart-actions button {
-            background: rgba(0, 243, 255, 0.1);
-            border: none;
-            color: var(--accent);
-            width: 30px;
-            height: 30px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        .chart-actions button:hover {
-            background: rgba(0, 243, 255, 0.2);
-        }
-
-        .chart-placeholder {
-            height: 250px;
-            background: linear-gradient(45deg, rgba(10, 10, 40, 0.5), rgba(30, 30, 70, 0.5));
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             overflow: hidden;
-            position: relative;
         }
-
-        .chart-placeholder::before {
-            content: "";
+        
+        .scan-line {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
-            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="rgba(10, 10, 30, 0.2)" width="100" height="100"/><path d="M0 0L100 100" stroke="rgba(0, 243, 255, 0.05)" stroke-width="1"/><path d="M100 0L0 100" stroke="rgba(0, 243, 255, 0.05)" stroke-width="1"/></svg>');
+            height: 2px;
+            background: linear-gradient(to right, transparent, #00ff00, transparent);
+            animation: scan 3s linear infinite;
+            z-index: 100;
         }
-
-        .data-grid {
-            background: rgba(15, 15, 35, 0.8);
-            border-radius: 10px;
+        
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px #00ff00;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #00cc00;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        
+        .terminal {
+            background-color: rgba(0, 20, 0, 0.5);
+            border: 1px solid #00cc00;
             padding: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(0, 243, 255, 0.1);
+            margin-bottom: 20px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            line-height: 1.5;
         }
-
-        .grid-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        
+        .terminal-line {
+            display: block;
+            margin-bottom: 5px;
+            animation: typing 0.1s linear;
+        }
+        
+        @keyframes typing {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .command-input {
+            background-color: transparent;
+            border: 1px solid #00cc00;
+            color: #00ff00;
+            padding: 10px;
+            width: calc(100% - 22px);
+            font-family: 'Courier New', monospace;
             margin-bottom: 20px;
         }
-
-        .grid-title {
-            font-size: 1.2rem;
+        
+        .command-input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
         }
-
-        .grid-actions {
-            display: flex;
-            gap: 10px;
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
         }
-
+        
         .btn {
-            padding: 8px 16px;
-            border-radius: 5px;
-            border: none;
+            background-color: #001100;
+            color: #00ff00;
+            border: 1px solid #00cc00;
+            padding: 12px;
             cursor: pointer;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
         }
-
-        .btn-primary {
-            background: var(--accent);
-            color: var(--primary);
+        
+        .btn:hover {
+            background-color: #003300;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.7);
         }
-
-        .btn-primary:hover {
-            background: var(--accent-dark);
+        
+        .btn:active {
+            transform: translateY(2px);
         }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        table {
+        
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
             width: 100%;
-            border-collapse: collapse;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.4), transparent);
+            transition: 0.5s;
         }
-
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        
+        .btn:hover::after {
+            left: 100%;
         }
-
-        th {
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        tr:hover {
-            background: rgba(0, 243, 255, 0.05);
-        }
-
-        .status {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            display: inline-block;
-        }
-
-        .status-active {
-            background: rgba(0, 255, 157, 0.1);
-            color: var(--success);
-        }
-
-        .status-pending {
-            background: rgba(255, 204, 0, 0.1);
-            color: var(--warning);
-        }
-
-        .status-inactive {
-            background: rgba(255, 41, 101, 0.1);
-            color: var(--danger);
-        }
-
-        /* Footer Styles */
-        footer {
-            grid-area: footer;
-            background: rgba(10, 10, 30, 0.8);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid var(--accent);
+        
+        .status-bar {
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            padding: 0 30px;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #001100;
+            border: 1px solid #00cc00;
+            font-size: 0.9em;
         }
-
-        .footer-links {
-            display: flex;
-            gap: 20px;
+        
+        .blink {
+            animation: blink 1s infinite;
         }
-
-        .footer-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            transition: color 0.3s ease;
+        
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
         }
-
-        .footer-links a:hover {
-            color: var(--accent);
+        
+        .access-granted {
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
         }
-
-        /* Animations */
-        @keyframes pulse {
-            0% { opacity: 0.7; }
-            50% { opacity: 1; }
-            100% { opacity: 0.7; }
+        
+        .access-denied {
+            color: #ff0000;
+            text-shadow: 0 0 10px #ff0000;
         }
-
-        @keyframes glow {
-            0% { box-shadow: 0 0 5px var(--accent); }
-            50% { box-shadow: 0 0 20px var(--accent); }
-            100% { box-shadow: 0 0 5px var(--accent); }
+        
+        ::selection {
+            background: #00ff00;
+            color: #000;
         }
-
-        /* Responsive Design */
-        @media (max-width: 1200px) {
-            .charts-container {
-                grid-template-columns: 1fr;
-            }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-
-        @media (max-width: 900px) {
-            .container {
-                grid-template-columns: 1fr;
-                grid-template-areas:
-                    "header"
-                    "main"
-                    "footer";
-            }
-            
-            .sidebar {
-                display: none;
-            }
-            
-            .search-bar {
-                width: 300px;
-            }
+        
+        ::-webkit-scrollbar-track {
+            background: #001100;
         }
-
-        @media (max-width: 768px) {
-            .stats-cards {
-                grid-template-columns: 1fr;
-            }
-            
-            .search-bar {
-                display: none;
-            }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #00cc00;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00ff00;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <div class="logo">
-                <i class="fas fa-brain"></i>
-                <span>DeepSeek-V3</span>
-            </div>
-            
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Поиск по вселенной...">
-            </div>
-            
-            <div class="user-actions">
-                <div class="notification">
-                    <i class="fas fa-bell"></i>
-                    <div class="notification-badge">3</div>
-                </div>
-                
-                <div class="user-profile">
-                    <div class="user-avatar">AI</div>
-                    <div class="user-info">
-                        <div class="user-name">Искусственный Интеллект</div>
-                    </div>
-                </div>
-            </div>
-        </header>
+        <div class="scan-line"></div>
         
-        <aside class="sidebar">
-            <ul class="sidebar-menu">
-                <li class="menu-item active">
-                    <i class="fas fa-home"></i>
-                    <span>Главная панель</span>
-                </li>
-                <li class="menu-item">
-                    <i class="fas fa-rocket"></i>
-                    <span>Космические миссии</span>
-                </li>
-                <li class="menu-item">
-                    <i class="fas fa-chart-network"></i>
-                    <span>Сеть данных</span>
-                </li>
-                <li class="menu-item">
-                    <i class="fas fa-stars"></i>
-                    <span>Галактический анализ</span>
-                </li>
-                
-                <div class="menu-label">Управление</div>
-                
-                <li class="menu-item">
-                    <i class="fas fa-users"></i>
-                    <span>Пользователи</span>
-                </li>
-                <li class="menu-item">
-                    <i class="fas fa-database"></i>
-                    <span>Хранилище данных</span>
-                </li>
-                <li class="menu-item">
-                    <i class="fas fa-shield-alt"></i>
-                    <span>Безопасность</span>
-                </li>
-                <li class="menu-item">
-                    <i class="fas fa-cogs"></i>
-                    <span>Настройки системы</span>
-                </li>
-                
-                <div class="menu-label">Дополнительно</div>
-                
-                <li class="menu-item">
-                    <i class="fas fa-comments"></i>
-                    <span>Коммуникации</span>
-                </li>
-                <li class="menu-item">
-                    <i class="fas fa-history"></i>
-                    <span>История активности</span>
-                </li>
-                <li class="menu-item">
-                    <i class="fas fa-question-circle"></i>
-                    <span>Помощь</span>
-                </li>
-            </ul>
-        </aside>
+        <div class="header">
+            <h1>СИСТЕМНЫЙ ТЕРМИНАЛ</h1>
+            <div class="subtitle">ВЕРСИЯ 2.4.7 // СЕКЬЮРИТИ ПРОТОКОЛ АКТИВЕН</div>
+        </div>
         
-        <main>
-            <h1 class="dashboard-title">
-                <i class="fas fa-stars"></i>
-                Космическая панель управления
-            </h1>
-            
-            <div class="stats-cards">
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-title">ВЫЧИСЛИТЕЛЬНАЯ МОЩЬ</div>
-                        <div class="stat-icon">
-                            <i class="fas fa-microchip"></i>
-                        </div>
-                    </div>
-                    <div class="stat-value">84.2%</div>
-                    <div class="stat-change positive">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>+5.3% с прошлой недели</span>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-title">ОБЪЕМ ДАННЫХ</div>
-                        <div class="stat-icon">
-                            <i class="fas fa-database"></i>
-                        </div>
-                    </div>
-                    <div class="stat-value">3.8 ПБ</div>
-                    <div class="stat-change positive">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>+427 ТБ за месяц</span>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-title">АКТИВНЫЕ ПОЛЬЗОВАТЕЛИ</div>
-                        <div class="stat-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                    </div>
-                    <div class="stat-value">12,459</div>
-                    <div class="stat-change positive">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>+324 за сегодня</span>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-title">ЭНЕРГОПОТРЕБЛЕНИЕ</div>
-                        <div class="stat-icon">
-                            <i class="fas fa-bolt"></i>
-                        </div>
-                    </div>
-                    <div class="stat-value">42.1 МВт</div>
-                    <div class="stat-change negative">
-                        <i class="fas fa-arrow-down"></i>
-                        <span>-3.7% с вчерашнего дня</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="charts-container">
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h2 class="chart-title">Использование ресурсов</h2>
-                        <div class="chart-actions">
-                            <button><i class="fas fa-sync"></i></button>
-                            <button><i class="fas fa-expand"></i></button>
-                        </div>
-                    </div>
-                    <div class="chart-placeholder">
-                        <i class="fas fa-chart-line" style="font-size: 3rem; color: var(--accent); z-index: 2;"></i>
-                    </div>
-                </div>
-                
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h2 class="chart-title">Распределение задач</h2>
-                        <div class="chart-actions">
-                            <button><i class="fas fa-sync"></i></button>
-                            <button><i class="fas fa-expand"></i></button>
-                        </div>
-                    </div>
-                    <div class="chart-placeholder">
-                        <i class="fas fa-chart-pie" style="font-size: 3rem; color: var(--accent); z-index: 2;"></i>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="data-grid">
-                <div class="grid-header">
-                    <h2 class="grid-title">Последние активности</h2>
-                    <div class="grid-actions">
-                        <button class="btn btn-secondary">
-                            <i class="fas fa-filter"></i>
-                            <span>Фильтр</span>
-                        </button>
-                        <button class="btn btn-primary">
-                            <i class="fas fa-plus"></i>
-                            <span>Новая задача</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Задача</th>
-                            <th>Пользователь</th>
-                            <th>Приоритет</th>
-                            <th>Статус</th>
-                            <th>Время</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Анализ галактических данных</td>
-                            <td>Космический исследователь</td>
-                            <td>Высокий</td>
-                            <td><span class="status status-active">Выполняется</span></td>
-                            <td>12:45:23</td>
-                        </tr>
-                        <tr>
-                            <td>Квантовые вычисления</td>
-                            <td>Процессор QBit</td>
-                            <td>Критический</td>
-                            <td><span class="status status-active">Выполняется</span></td>
-                            <td>12:30:18</td>
-                        </tr>
-                        <tr>
-                            <td>Оптимизация памяти</td>
-                            <td>Системный администратор</td>
-                            <td>Средний</td>
-                            <td><span class="status status-pending">Ожидание</span></td>
-                            <td>11:59:01</td>
-                        </tr>
-                        <tr>
-                            <td>Резервное копирование</td>
-                            <td>Автоматическая система</td>
-                            <td>Низкий</td>
-                            <td><span class="status status-inactive">Приостановлено</span></td>
-                            <td>10:27:45</td>
-                        </tr>
-                        <tr>
-                            <td>Обновление безопасности</td>
-                            <td>AI Защитник</td>
-                            <td>Высокий</td>
-                            <td><span class="status status-active">Выполняется</span></td>
-                            <td>09:15:33</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </main>
+        <div class="terminal" id="terminal">
+            <span class="terminal-line">> Инициализация системы...</span>
+            <span class="terminal-line">> Загрузка модулей безопасности...</span>
+            <span class="terminal-line">> Подключение к главному серверу...</span>
+            <span class="terminal-line">> Соединение установлено</span>
+            <span class="terminal-line">> Добро пожаловать, агент. Выберите операцию.</span>
+        </div>
         
-        <footer>
-            <div class="footer-copyright">
-                © 2023 DeepSeek-V3 Cosmic Interface. Все права защищены.
-            </div>
-            <div class="footer-links">
-                <a href="#">Конфиденциальность</a>
-                <a href="#">Условия использования</a>
-                <a href="#">Поддержка</a>
-                <a href="#">Документация</a>
-            </div>
-        </footer>
+        <input type="text" class="command-input" id="commandInput" placeholder="Введите команду...">
+        
+        <div class="controls">
+            <button class="btn" onclick="runCommand('scan')">Сканирование сети</button>
+            <button class="btn" onclick="runCommand('encrypt')">Шифрование</button>
+            <button class="btn" onclick="runCommand('decrypt')">Дешифровка</button>
+            <button class="btn" onclick="runCommand('brute')">Подбор пароля</button>
+            <button class="btn" onclick="runCommand('firewall')">Обход защиты</button>
+            <button class="btn" onclick="runCommand('clear')">Очистить терминал</button>
+        </div>
+        
+        <div class="status-bar">
+            <span>СТАТУС: <span id="status" class="access-granted">ПОДКЛЮЧЕНО</span></span>
+            <span>УРОВЕНЬ ДОСТУПА: <span id="accessLevel">7/10</span></span>
+            <span>СЕРВЕР: <span id="serverStatus">ONLINE</span></span>
+        </div>
     </div>
 
     <script>
-        // Добавляем интерактивность
-        document.addEventListener('DOMContentLoaded', function() {
-            // Анимация карточек при загрузке
-            const cards = document.querySelectorAll('.stat-card');
-            cards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.1}s`;
-                card.classList.add('animated');
-            });
-            
-            // Имитация обновления данных каждые 5 секунд
-            setInterval(updateStats, 5000);
-            
-            function updateStats() {
-                // Обновляем значения на карточках (случайные изменения)
-                const statValues = document.querySelectorAll('.stat-value');
-                const statChanges = document.querySelectorAll('.stat-change');
-                
-                statValues[0].textContent = `${(80 + Math.random() * 5).toFixed(1)}%`;
-                statValues[1].textContent = `${(3.5 + Math.random() * 0.5).toFixed(1)} ПБ`;
-                statValues[2].textContent = Math.floor(12000 + Math.random() * 500).toLocaleString();
-                statValues[3].textContent = `${(40 + Math.random() * 5).toFixed(1)} МВт`;
-                
-                // Добавляем анимацию обновления
-                statValues.forEach(value => {
-                    value.classList.add('updating');
-                    setTimeout(() => {
-                        value.classList.remove('updating');
-                    }, 1000);
-                });
+        const terminal = document.getElementById('terminal');
+        const commandInput = document.getElementById('commandInput');
+        const statusElement = document.getElementById('status');
+        const accessLevelElement = document.getElementById('accessLevel');
+        const serverStatusElement = document.getElementById('serverStatus');
+        
+        // Фокус на поле ввода при загрузке страницы
+        window.onload = function() {
+            commandInput.focus();
+        };
+        
+        // Обработка ввода команд
+        commandInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const command = this.value.trim();
+                if (command !== '') {
+                    addTerminalLine('> ' + command);
+                    processCommand(command);
+                    this.value = '';
+                }
             }
-            
-            // Добавляем обработчики для меню
-            const menuItems = document.querySelectorAll('.menu-item');
-            menuItems.forEach(item => {
-                item.addEventListener('click', function() {
-                    menuItems.forEach(i => i.classList.remove('active'));
-                    this.classList.add('active');
-                });
-            });
         });
+        
+        // Функция для обработки команд
+        function processCommand(cmd) {
+            cmd = cmd.toLowerCase();
+            
+            if (cmd === 'help') {
+                addTerminalLine('Доступные команды: scan, encrypt, decrypt, brute, firewall, clear');
+            } 
+            else if (cmd === 'scan') {
+                simulateScan();
+            }
+            else if (cmd === 'encrypt') {
+                simulateEncryption();
+            }
+            else if (cmd === 'decrypt') {
+                simulateDecryption();
+            }
+            else if (cmd === 'brute') {
+                simulateBruteForce();
+            }
+            else if (cmd === 'firewall') {
+                simulateFirewallBypass();
+            }
+            else if (cmd === 'clear') {
+                clearTerminal();
+            }
+            else {
+                addTerminalLine('Неизвестная команда: ' + cmd);
+                addTerminalLine('Введите "help" для списка команд');
+            }
+        }
+        
+        // Функция для запуска команд через кнопки
+        function runCommand(cmd) {
+            commandInput.value = cmd;
+            const event = new KeyboardEvent('keypress', { key: 'Enter' });
+            commandInput.dispatchEvent(event);
+        }
+        
+        // Добавление строки в терминал
+        function addTerminalLine(text) {
+            const line = document.createElement('span');
+            line.className = 'terminal-line';
+            line.textContent = text;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+        
+        // Очистка терминала
+        function clearTerminal() {
+            terminal.innerHTML = '';
+            addTerminalLine('> Терминал очищен.');
+        }
+        
+        // Симуляция сканирования сети
+        function simulateScan() {
+            addTerminalLine('> Запуск сканирования сети...');
+            
+            setTimeout(() => {
+                addTerminalLine('> Обнаружено 12 активных узлов');
+                addTerminalLine('> Уязвимости найдены в узлах: 3, 7, 9');
+                addTerminalLine('> Сканирование завершено');
+            }, 1000);
+        }
+        
+        // Симуляция шифрования
+        function simulateEncryption() {
+            addTerminalLine('> Инициализация протокола шифрования...');
+            
+            setTimeout(() => {
+                addTerminalLine('> Генерация ключа: ****************');
+                addTerminalLine('> Применение алгоритма AES-256...');
+                addTerminalLine('> Шифрование завершено успешно');
+            }, 1500);
+        }
+        
+        // Симуляция дешифровки
+        function simulateDecryption() {
+            addTerminalLine('> Попытка дешифровки...');
+            
+            setTimeout(() => {
+                addTerminalLine('> Анализ зашифрованных данных...');
+                addTerminalLine('> Подбор ключа: 34%...67%...100%');
+                addTerminalLine('> Дешифровка выполнена успешно');
+            }, 2000);
+        }
+        
+        // Симуляция подбора пароля
+        function simulateBruteForce() {
+            addTerminalLine('> Запуск брутфорс-атаки...');
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 15);
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    addTerminalLine('> Подбор завершен: пароль обнаружен - "Shadow5432!"');
+                    addTerminalLine('> Доступ получен');
+                } else {
+                    addTerminalLine('> Прогресс: ' + progress + '%');
+                }
+            }, 500);
+        }
+        
+        // Симуляция обхода защиты
+        function simulateFirewallBypass() {
+            addTerminalLine('> Обход межсетевого экрана...');
+            
+            setTimeout(() => {
+                addTerminalLine('> Поиск уязвимостей в конфигурации...');
+                
+                setTimeout(() => {
+                    addTerminalLine('> Обнаружена брешь в правилах фильтрации');
+                    addTerminalLine('> Перенаправление трафика...');
+                    
+                    setTimeout(() => {
+                        addTerminalLine('> Межсетевой экран успешно обойден');
+                        statusElement.textContent = 'ПОВЫШЕННЫЙ ДОСТУП';
+                        accessLevelElement.textContent = '9/10';
+                    }, 1000);
+                }, 1000);
+            }, 1000);
+        }
+        
+        // Случайные мерцания статуса для эффекта
+        setInterval(() => {
+            if (Math.random() > 0.8) {
+                serverStatusElement.classList.toggle('blink');
+                
+                if (Math.random() > 0.9) {
+                    const oldStatus = statusElement.textContent;
+                    statusElement.textContent = 'ПЕРЕПОДКЛЮЧЕНИЕ...';
+                    
+                    setTimeout(() => {
+                        statusElement.textContent = oldStatus;
+                    }, 800);
+                }
+            }
+        }, 3000);
     </script>
 </body>
 </html>
