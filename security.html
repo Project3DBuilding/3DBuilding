@@ -1,415 +1,3 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Защита сайта на GitHub Pages</title>
-    <style>
-        body {
-            background-color: #0a0a0a;
-            color: #00ff00;
-            font-family: 'Courier New', monospace;
-            margin: 0;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            border: 1px solid #00ff00;
-            padding: 20px;
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
-            background: rgba(10, 15, 10, 0.9);
-        }
-        
-        h1, h2, h3 {
-            color: #00ff00;
-            text-shadow: 0 0 10px #00ff00;
-        }
-        
-        h1 {
-            text-align: center;
-            border-bottom: 1px solid #00cc00;
-            padding-bottom: 10px;
-        }
-        
-        .section {
-            margin-bottom: 30px;
-            padding: 15px;
-            border: 1px solid #008800;
-            background: rgba(0, 20, 0, 0.3);
-        }
-        
-        .code-block {
-            background: #001100;
-            padding: 15px;
-            border-left: 3px solid #00cc00;
-            overflow-x: auto;
-            margin: 15px 0;
-            font-family: 'Courier New', monospace;
-        }
-        
-        .warning {
-            color: #ff6600;
-            border: 1px solid #ff6600;
-            padding: 10px;
-            background: rgba(255, 102, 0, 0.1);
-            margin: 10px 0;
-        }
-        
-        .success {
-            color: #00ff00;
-            border: 1px solid #00ff00;
-            padding: 10px;
-            background: rgba(0, 255, 0, 0.1);
-            margin: 10px 0;
-        }
-        
-        .btn {
-            background: #002200;
-            color: #00ff00;
-            border: 1px solid #00aa00;
-            padding: 10px 15px;
-            cursor: pointer;
-            font-family: 'Courier New', monospace;
-            margin: 5px;
-            transition: all 0.3s;
-        }
-        
-        .btn:hover {
-            background: #003300;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-        }
-        
-        .tab {
-            overflow: hidden;
-            border: 1px solid #00cc00;
-            background-color: #001100;
-        }
-        
-        .tab button {
-            background-color: inherit;
-            float: left;
-            border: none;
-            outline: none;
-            cursor: pointer;
-            padding: 14px 16px;
-            transition: 0.3s;
-            color: #00cc00;
-            font-family: 'Courier New', monospace;
-        }
-        
-        .tab button:hover {
-            background-color: #002200;
-        }
-        
-        .tab button.active {
-            background-color: #003300;
-            color: #00ff00;
-        }
-        
-        .tabcontent {
-            display: none;
-            padding: 15px;
-            border: 1px solid #00cc00;
-            border-top: none;
-            animation: fadeEffect 1s;
-        }
-        
-        @keyframes fadeEffect {
-            from {opacity: 0;}
-            to {opacity: 1;}
-        }
-        
-        .checklist {
-            list-style-type: none;
-            padding: 0;
-        }
-        
-        .checklist li {
-            padding: 5px 0;
-            position: relative;
-            padding-left: 30px;
-        }
-        
-        .checklist li:before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: #00ff00;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>КОМПЛЕКСНАЯ ЗАЩИТА САЙТА НА GITHUB PAGES</h1>
-        
-        <div class="section">
-            <h2>Особенности защиты на GitHub Pages</h2>
-            <p>GitHub Pages - это статический хостинг, поэтому традиционные серверные методы защиты недоступны. Однако можно реализовать клиентские методы защиты.</p>
-            
-            <div class="warning">
-                <strong>Внимание:</strong> Клиентская защита никогда не бывает полностью надежной. Всегда помните об ограничениях.
-            </div>
-        </div>
-        
-        <div class="tab">
-            <button class="tablinks active" onclick="openTab(event, 'Auth')">Аутентификация</button>
-            <button class="tablinks" onclick="openTab(event, 'Obfuscation')">Обфускация</button>
-            <button class="tablinks" onclick="openTab(event, 'Config')">Конфигурация</button>
-            <button class="tablinks" onclick="openTab(event, 'Monitoring')">Мониторинг</button>
-        </div>
-        
-        <div id="Auth" class="tabcontent" style="display:block;">
-            <h3>Защита аутентификации</h3>
-            
-            <h4>1. Хранение паролей</h4>
-            <div class="code-block">
-// Никогда не храните пароли в открытом виде!
-// Используйте хеширование с солью
-function hashPassword(password, salt) {
-    return CryptoJS.SHA256(password + salt).toString();
-}
-
-// Генерация соли
-function generateSalt() {
-    return Math.random().toString(36).substring(2, 15) + 
-           Math.random().toString(36).substring(2, 15);
-}
-
-// Пример использования
-const salt = generateSalt();
-const hashedPassword = hashPassword('user_password', salt);
-            </div>
-            
-            <h4>2. Защита LocalStorage</h4>
-            <div class="code-block">
-// Шифрование данных перед сохранением
-function encryptData(data, key) {
-    return CryptoJS.AES.encrypt(data, key).toString();
-}
-
-// Дешифрование данных
-function decryptData(encryptedData, key) {
-    const bytes = CryptoJS.AES.decrypt(encryptedData, key);
-    return bytes.toString(CryptoJS.enc.Utf8);
-}
-
-// Пример использования
-const encryptionKey = 'your-secret-encryption-key';
-const userData = {username: 'admin', level: 'superuser'};
-const encrypted = encryptData(JSON.stringify(userData), encryptionKey);
-localStorage.setItem('userSession', encrypted);
-            </div>
-        </div>
-        
-        <div id="Obfuscation" class="tabcontent">
-            <h3>Обфускация и защита кода</h3>
-            
-            <h4>1. Минификация и обфускация</h4>
-            <p>Используйте инструменты для сжатия и запутывания кода:</p>
-            <ul class="checklist">
-                <li>UglifyJS - для минификации JavaScript</li>
-                <li>JavaScript Obfuscator - для запутывания кода</li>
-                <li>CSSMinifier - для сжатия CSS</li>
-                <li>HTMLMinifier - для сжатия HTML</li>
-            </ul>
-            
-            <h4>2. Защита от копирования</h4>
-            <div class="code-block">
-// Запрет контекстного меню
-document.addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-    return false;
-});
-
-// Запрет выделения текста
-document.addEventListener('selectstart', function(e) {
-    e.preventDefault();
-    return false;
-});
-
-// Запрет горячих клавиш
-document.addEventListener('keydown', function(e) {
-    // Ctrl+U, F12, Ctrl+Shift+I, etc.
-    if (e.ctrlKey && e.keyCode == 85 || e.keyCode == 123 || 
-        e.ctrlKey && e.shiftKey && e.keyCode == 73) {
-        e.preventDefault();
-        return false;
-    }
-});
-            </div>
-        </div>
-        
-        <div id="Config" class="tabcontent">
-            <h3>Конфигурация GitHub</h3>
-            
-            <h4>1. Файл .gitignore</h4>
-            <p>Добавьте в .gitignore конфиденциальные файлы:</p>
-            <div class="code-block">
-# Конфиденциальные данные
-config.json
-secrets.js
-.env
-*.key
-
-# Локальные настройки
-.DS_Store
-Thumbs.db
-
-# Логи
-*.log
-npm-debug.log*
-            </div>
-            
-            <h4>2. Настройки репозитория</h4>
-            <ul class="checklist">
-                <li>Ограничьте доступ к репозиторию</li>
-                <li>Используйте ветки для окружений (main, dev)</li>
-                <li>Настройте GitHub Actions для автоматического развертывания</li>
-                <li>Включите опцию "Require pull request reviews before merging"</li>
-            </ul>
-            
-            <h4>3. HTTPS и безопасные заголовки</h4>
-            <p>Добавьте файл _headers в корневую директорию:</p>
-            <div class="code-block">
-/*
-  X-Frame-Options: DENY
-  X-XSS-Protection: 1; mode=block
-  X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: geolocation=(), microphone=(), camera=()
-            </div>
-        </div>
-        
-        <div id="Monitoring" class="tabcontent">
-            <h3>Мониторинг и анализ</h3>
-            
-            <h4>1. Отслеживание активности</h4>
-            <div class="code-block">
-// Логирование попыток входа
-function logLoginAttempt(username, success, ip) {
-    const timestamp = new Date().toISOString();
-    const logEntry = {
-        timestamp,
-        username,
-        success,
-        ip,
-        userAgent: navigator.userAgent
-    };
-    
-    // Отправка на сервер логирования
-    fetch('https://your-log-server.com/log', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(logEntry)
-    }).catch(error => {
-        console.error('Ошибка логирования:', error);
-    });
-}
-            </div>
-            
-            <h4>2. Защита от ботов</h4>
-            <div class="code-block">
-// Проверка на человечность
-function isHuman() {
-    // Проверка поддержки WebGL (обычно есть у браузеров)
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    
-    // Проверка плагинов
-    const plugins = navigator.plugins.length;
-    
-    // Проверка временной зоны
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    
-    return gl && plugins > 0 && timezone;
-}
-
-// Задержка для ботов
-function antiBotDelay() {
-    const start = Date.now();
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const elapsed = Date.now() - start;
-            // Если выполнение было слишком быстрым, возможно это бот
-            if (elapsed < 100) {
-                logSuspiciousActivity('Возможный бот');
-            }
-            resolve();
-        }, 500 + Math.random() * 1000);
-    });
-}
-            </div>
-            
-            <h4>3. Аварийное отключение</h4>
-            <div class="code-block">
-// Система аварийного отключения
-function emergencyShutdown() {
-    // Удаление всех данных
-    localStorage.clear();
-    sessionStorage.clear();
-    
-    // Перенаправление на безопасную страницу
-    window.location.href = 'https://your-site.com/emergency.html';
-    
-    // Отправка уведомления администратору
-    fetch('https://your-api.com/emergency', {
-        method: 'POST',
-        body: JSON.stringify({reason: ' emergency shutdown' })
-    });
-}
-
-// Проверка флага аварийного отключения
-function checkEmergencyStatus() {
-    fetch('https://your-api.com/status')
-        .then(response => response.json())
-        .then(data => {
-            if (data.emergency) {
-                emergencyShutdown();
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка проверки статуса:', error);
-        });
-}
-
-// Проверяем статус каждые 5 минут
-setInterval(checkEmergencyStatus, 300000);
-            </div>
-        </div>
-        
-        <div class="section">
-            <h2>Практическая реализация защиты</h2>
-            
-            <h3>1. Добавьте защиту в index.html</h3>
-            <div class="code-block">
-// В начало файла добавьте проверку
-(function() {
-    // Проверка поддержки JavaScript
-    if (!window.JSON || !window.localStorage) {
-        document.body.innerHTML = '&lt;h1 style="color:red;text-align:center;"&gt;Требуется поддержка JavaScript и современных веб-стандартов&lt;/h1&gt;';
-        return;
-    }
-    
-    // Проверка на iframe (защита от clickjacking)
-    if (window.top !== window.self) {
-        window.top.location = window.self.location;
-    }
-    
-    // Проверка на автоматизированные средства
-    if (navigator.webdriver || window.callPhantom || window._phantom) {
-        document.body.innerHTML = '&lt;h1 style="color:red;text-align:center;"&gt;Доступ запрещен&lt;/h1&gt;';
-        return;
-    }
-})();
-            </div>
-            
-            <h3>2. Создайте файл security.js</h3>
-            <div class="code-block">
 // security.js - основные функции защиты
 
 class SecuritySystem {
@@ -417,10 +5,17 @@ class SecuritySystem {
         this.attempts = 0;
         this.maxAttempts = 5;
         this.lockoutTime = 300000; // 5 минут
+        this.init();
     }
     
-    // Проверка браузера
-    checkBrowser() {
+    // Инициализация системы безопасности
+    init() {
+        this.checkEnvironment();
+        this.setupProtections();
+    }
+    
+    // Проверка окружения
+    checkEnvironment() {
         const features = {
             cookies: navigator.cookieEnabled,
             localStorage: !!window.localStorage,
@@ -429,7 +24,32 @@ class SecuritySystem {
             geolocation: !!navigator.geolocation
         };
         
-        return Object.values(features).every(f => f === true);
+        const allSupported = Object.values(features).every(f => f === true);
+        
+        if (!allSupported) {
+            console.warn('Некоторые функции безопасности недоступны в этом браузере');
+        }
+        
+        return allSupported;
+    }
+    
+    // Настройка базовых защит
+    setupProtections() {
+        // Защита от iframe (clickjacking)
+        if (window.top !== window.self) {
+            window.top.location = window.self.location;
+        }
+        
+        // Базовая защита от копирования
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) e.preventDefault();
+        });
+    }
+    
+    // Проверка браузера
+    checkBrowser() {
+        return this.checkEnvironment();
     }
     
     // Защита от brute force
@@ -446,7 +66,7 @@ class SecuritySystem {
         return attempts;
     }
     
-    // Record attempt
+    // Запись попытки
     recordAttempt(success) {
         let attempts = parseInt(localStorage.getItem('loginAttempts') || '0');
         
@@ -462,24 +82,59 @@ class SecuritySystem {
         return attempts;
     }
     
-    // Очистка данных
+    // Очистка чувствительных данных
     clearSensitiveData() {
-        // Удаляем только чувствительные данные
-        const sensitiveKeys = ['userToken', 'authData', 'sessionKey'];
+        const sensitiveKeys = ['userToken', 'authData', 'sessionKey', 'loginAttempts', 'lastAttempt'];
         sensitiveKeys.forEach(key => {
             localStorage.removeItem(key);
             sessionStorage.removeItem(key);
         });
     }
+    
+    // Шифрование данных
+    encryptData(data, key) {
+        try {
+            return CryptoJS.AES.encrypt(JSON.stringify(data), key).toString();
+        } catch (error) {
+            console.error('Ошибка шифрования:', error);
+            return null;
+        }
+    }
+    
+    // Дешифрование данных
+    decryptData(encryptedData, key) {
+        try {
+            const bytes = CryptoJS.AES.decrypt(encryptedData, key);
+            return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+        } catch (error) {
+            console.error('Ошибка дешифрования:', error);
+            return null;
+        }
+    }
+    
+    // Генерация соли для хеширования
+    generateSalt(length = 16) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let salt = '';
+        for (let i = 0; i < length; i++) {
+            salt += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return salt;
+    }
+    
+    // Хеширование пароля
+    hashPassword(password, salt) {
+        try {
+            return CryptoJS.SHA256(password + salt).toString();
+        } catch (error) {
+            console.error('Ошибка хеширования:', error);
+            return null;
+        }
+    }
 }
 
-// Экспорт для использования в других файлах
-window.SecuritySystem = SecuritySystem;
-            </div>
-            
-            <h3>3. Добавьте скрытые методы защиты</h3>
-            <div class="code-block">
-// hidden-protection.js - скрытая защита
+// Создаем глобальный экземпляр системы безопасности
+window.securitySystem = new SecuritySystem();
 
 // Honey tokens - приманки для хакеров
 const honeyTokens = {
@@ -494,22 +149,13 @@ const honeyTokens = {
     }
 };
 
-// Ловушка для хакеров
+// Настройка ловушек
 function setupHoneypots() {
-    // Скрытые поля формы
-    const honeypotField = document.createElement('input');
-    honeypotField.type = 'text';
-    honeypotField.name = 'contact_me_by_fax_only';
-    honeypotField.style.display = 'none';
-    honeypotField.className = 'honeypot';
-    document.querySelector('form').appendChild(honeypotField);
-    
-    // Мониторинг доступа к honey tokens
+    // Защита с помощью Proxy для отслеживания доступа
     const honeyHandler = {
         get: function(target, property) {
             console.warn('Доступ к honey token:', property);
-            // Отправляем уведомление
-            reportSuspiciousActivity(`honey_token_access:${property}`);
+            // В реальной системе здесь должна быть отправка уведомления
             return target[property];
         }
     };
@@ -517,94 +163,8 @@ function setupHoneypots() {
     window.honeyProxy = new Proxy(honeyTokens, honeyHandler);
 }
 
-// Запуск защиты при загрузке
-document.addEventListener('DOMContentLoaded', setupHoneypots);
-            </div>
-        </div>
-        
-        <div class="section">
-            <h2>Деплой и мониторинг</h2>
-            
-            <h3>1. GitHub Actions для автоматической проверки</h3>
-            <p>Создайте файл .github/workflows/security.yml:</p>
-            <div class="code-block">
-name: Security Scan
-
-on: [push, pull_request]
-
-jobs:
-  security:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Check for secrets
-      uses: actions/check-secrets@v1
-      with:
-        patterns: 'password|secret|key|token'
-    - name: Run ESLint security audit
-      run: npx eslint --config .eslintrc.security.js .
-            </div>
-            
-            <h3>2. Настройка мониторинга</h3>
-            <ul class="checklist">
-                <li>Используйте Google Analytics для отслеживания трафика</li>
-                <li>Настройте оповещения о подозрительной активности</li>
-                <li>Регулярно проверяйте логи доступа</li>
-                <li>Используйте внешние сервисы мониторинга (UptimeRobot)</li>
-            </ul>
-            
-            <div class="success">
-                <strong>Важно:</strong> Регулярно обновляйте зависимости и проверяйте уязвимости с помощью npm audit или GitHub Dependabot.
-            </div>
-        </div>
-        
-        <div class="section">
-            <h2>Проверка защиты</h2>
-            <button class="btn" onclick="testSecurity()">Запустить тест безопасности</button>
-            <div id="testResults"></div>
-        </div>
-    </div>
-
-    <script>
-        function openTab(evt, tabName) {
-            var i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tabcontent");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-            }
-            tablinks = document.getElementsByClassName("tablinks");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
-            document.getElementById(tabName).style.display = "block";
-            evt.currentTarget.className += " active";
-        }
-        
-        function testSecurity() {
-            const results = document.getElementById('testResults');
-            results.innerHTML = '<h3>Результаты тестирования:</h3>';
-            
-            const tests = [
-                { name: 'LocalStorage доступен', test: () => !!window.localStorage },
-                { name: 'SessionStorage доступен', test: () => !!window.sessionStorage },
-                { name: 'Cookies включены', test: () => navigator.cookieEnabled },
-                { name: 'Не в iframe', test: () => window.self === window.top },
-                { name: 'HTTPS соединение', test: () => window.location.protocol === 'https:' },
-                { name: 'Не WebDriver', test: () => !navigator.webdriver }
-            ];
-            
-            tests.forEach(test => {
-                const result = test.test() ? 'ПРОЙДЕН' : 'НЕ ПРОЙДЕН';
-                const color = test.test() ? '#00ff00' : '#ff0000';
-                results.innerHTML += `<p style="color:${color}">${test.name}: ${result}</p>`;
-            });
-        }
-        
-        // Базовая защита от копирования
-        document.addEventListener('contextmenu', e => e.preventDefault());
-        document.addEventListener('keydown', e => {
-            if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) e.preventDefault();
-        });
-    </script>
-</body>
-</html>
+// Запуск защиты при полной загрузке страницы
+window.addEventListener('load', function() {
+    setupHoneypots();
+    console.log('Система безопасности инициализирована');
+});
