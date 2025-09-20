@@ -1,0 +1,22 @@
+# Security Headers
+/*
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+# Дополнительные настройки для конкретных путей
+/index.html
+  X-Frame-Options: SAMEORIGIN
+
+/terminal.html
+  X-Frame-Options: DENY
+
+# Запрет доступа к敏感文件
+/security.js
+  X-Content-Type-Options: nosniff
+
+/.github/*
+  X-Robots-Tag: noindex, nofollow
