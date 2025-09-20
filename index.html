@@ -267,9 +267,13 @@
                     statusMessage.innerHTML = 'ДОСТУП РАЗРЕШЕН... ПЕРЕАДРЕСАЦИЯ';
                     statusMessage.className = 'status-message access-granted';
                     
+                    // Сохраняем данные о входе
+                    localStorage.setItem('username', username);
+                    localStorage.setItem('loggedIn', 'true');
+                    
                     // Перенаправление на основную страницу после успешного входа
                     setTimeout(() => {
-                        window.location.href = 'hacker-terminal.html';
+                        window.location.href = 'terminal.html';
                     }, 1500);
                 } else {
                     statusMessage.innerHTML = 'ОШИБКА: НЕВЕРНЫЕ УЧЕТНЫЕ ДАННЫЕ';
