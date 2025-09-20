@@ -1,0 +1,40 @@
+name: Security Scan
+
+on: [push, pull_request]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Check for secrets
+      uses: actions/check-secrets@v1
+      with:
+        patterns: 'password|secret|key|token|auth|login|credential'
+        
+    - name: Run security audit
+      run: |
+        echo "Проверка файлов на наличие чувствительных данных..."
+        # Проверяем, нет ли в коде явных секретов
+        if grep -r "password\|secret\|key\|token" --include="*.js" --include="*.html" . | grep -v "security.js"; then
+          echo "Обнаружены потенциально чувствительные данные в коде!"
+          exit 1
+        fi
+        
+    - name: Check file permissions
+      run: |
+        echo "Проверка прав доступа к файлам..."
+        # Проверяем, нет ли файлов с слишком открытыми правами
+        find . -type f -perm /o=w -ls | while read line; do
+          echo "Файл с открытыми правами: $line"
+        done
+        
+    - name: Validate HTML
+      uses: peaceiris/actions-html-validator@v2
+      with:
+        file: index.html
+        
+    - name:完成安全检查
+      run: echo "Базовая проверка безопасности завершена"
