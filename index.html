@@ -4,6 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вход в систему</title>
+    <!-- Подключаем CryptoJS для шифрования -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <!-- Подключаем нашу систему безопасности -->
+    <script src="security.js"></script>
+    <style>
+        /* Ваши стили */
+    </style>
+    <script>
+        // Проверка безопасности при загрузке
+        (function() {
+            // Проверка поддержки JavaScript
+            if (!window.JSON || !window.localStorage) {
+                document.body.innerHTML = '<h1 style="color:red;text-align:center;padding:50px;">Требуется поддержка JavaScript и современных веб-стандартов</h1>';
+                return;
+            }
+            
+            // Проверка на iframe (защита от clickjacking)
+            if (window.top !== window.self) {
+                window.top.location = window.self.location;
+                return;
+            }
+            
+            // Проверка на автоматизированные средства
+            if (navigator.webdriver || window.callPhantom || window._phantom) {
+                document.body.innerHTML = '<h1 style="color:red;text-align:center;padding:50px;">Доступ запрещен</h1>';
+                return;
+            }
+            
+            // Проверка HTTPS
+            if (location.protocol !== 'https:') {
+                console.warn('Для максимальной безопасности используйте HTTPS');
+            }
+        })();
+    </script>
+</head>
+<body>
+    <!-- Ваше содержимое -->
+</body>
+</html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход в систему</title>
     <style>
         body {
             background-color: #0a0a0a;
