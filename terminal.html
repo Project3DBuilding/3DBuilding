@@ -72,6 +72,53 @@
             margin-bottom: 30px;
         }
         
+        .user-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            z-index: 1000;
+        }
+        
+        .user-info {
+            cursor: pointer;
+            padding: 8px 15px;
+            background: rgba(0, 30, 0, 0.5);
+            border: 1px solid #00cc00;
+            border-radius: 3px;
+        }
+        
+        .user-info:hover {
+            background: rgba(0, 50, 0, 0.7);
+        }
+        
+        .user-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: rgba(0, 30, 0, 0.9);
+            border: 1px solid #00cc00;
+            padding: 10px;
+            width: 200px;
+            z-index: 1001;
+            margin-top: 5px;
+        }
+        
+        .user-menu-item {
+            padding: 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #008800;
+        }
+        
+        .user-menu-item:hover {
+            background: rgba(0, 50, 0, 0.7);
+        }
+        
+        .user-menu-item:last-child {
+            border-bottom: none;
+        }
+        
         .main-content {
             display: flex;
             gap: 20px;
@@ -262,7 +309,7 @@
             background: #00ff00;
         }
         
-        .ip-scanner, .port-scanner, .hash-generator, .password-checker, .text-encoder, .network-simulator {
+        .ip-scanner, .port-scanner, .hash-generator, .password-checker, .text-encoder, .network-simulator, .settings-panel {
             display: none;
             margin-top: 15px;
             padding: 10px;
@@ -334,6 +381,21 @@
             background: #00ff00;
             box-shadow: 0 0 8px #00ff00;
         }
+        
+        .settings-form {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .settings-group {
+            margin-bottom: 15px;
+        }
+        
+        .settings-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -341,6 +403,17 @@
     
     <div class="container">
         <div class="scan-line"></div>
+        
+        <div class="user-panel">
+            <div class="user-info" onclick="toggleUserMenu()">
+                <span id="username-display">Администратор</span> ▼
+            </div>
+            <div id="user-menu" class="user-menu">
+                <div class="user-menu-item" onclick="showSettings()">Настройки</div>
+                <div class="user-menu-item" onclick="changePassword()">Сменить пароль</div>
+                <div class="user-menu-item" onclick="logout()">Выйти</div>
+            </div>
+        </div>
         
         <div class="header">
             <h1>КВАНТОВЫЙ ТЕРМИНАЛ ДОСТУПА</h1>
@@ -379,14 +452,9 @@
                     <p>Проверка надежности ваших паролей</p>
                 </div>
                 
-                <div class="tool-item" onclick="toggleTool('text-encoder')">
-                    <h3>ШИФРОВАЛЬЩИК ТЕКСТА</h3>
-                    <p>Кодирование и декодирование текста</p>
-                </div>
-                
-                <div class="tool-item" onclick="toggleTool('network-simulator')">
-                    <h3>СЕТЕВОЙ СИМУЛЯТОР</h3>
-                    <p>Визуализация сетевой активности</p>
+                <div class="tool-item" onclick="toggleTool('settings-panel')">
+                    <h3>НАСТРОЙКИ СИСТЕМЫ</h3>
+                    <p>Конфигурация параметров терминала</p>
                 </div>
                 
                 <div id="ip-scanner" class="ip-scanner">
@@ -414,17 +482,34 @@
                     <div class="scanner-result" id="password-result"></div>
                 </div>
                 
-                <div id="text-encoder" class="text-encoder">
-                    <input type="text" class="scanner-input" id="encode-input" placeholder="Введите текст">
-                    <button class="scanner-btn" onclick="encodeText()">Зашифровать</button>
-                    <button class="scanner-btn" onclick="decodeText()">Расшифровать</button>
-                    <div class="scanner-result crypto-result" id="encode-result"></div>
-                </div>
-                
-                <div id="network-simulator" class="network-simulator">
-                    <button class="scanner-btn" onclick="startNetworkSim()">Запуск симуляции</button>
-                    <div class="scanner-result" id="network-result">
-                        <div id="network-visualization"></div>
+                <div id="settings-panel" class="settings-panel">
+                    <div class="settings-form">
+                        <div class="settings-group">
+                            <label class="settings-label">ЦВЕТ ТЕКСТА:</label>
+                            <select class="scanner-input" id="text-color">
+                                <option value="#00ff00">Зеленый (по умолчанию)</option>
+                                <option value="#00ffff">Голубой</option>
+                                <option value="#ff00ff">Пурпурный</option>
+                                <option value="#ffff00">Желтый</option>
+                            </select>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <label class="settings-label">АНИМАЦИЯ ФОНА:</label>
+                            <select class="scanner-input" id="animation-speed">
+                                <option value="fast">Быстрая</option>
+                                <option value="normal" selected>Нормальная</option>
+                                <option value="slow">Медленная</option>
+                                <option value="off">Выключить</option>
+                            </select>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <label class="settings-label">УРОВЕНЬ ПРОЗРАЧНОСТИ:</label>
+                            <input type="range" class="scanner-input" id="opacity-range" min="0.1" max="1" step="0.1" value="0.9">
+                        </div>
+                        
+                        <button class="scanner-btn" onclick="applySettings()">Применить настройки</button>
                     </div>
                 </div>
             </div>
@@ -455,11 +540,21 @@
     </div>
 
     <script>
+        // Проверка аутентификации
+        if (localStorage.getItem('loggedIn') !== 'true') {
+            window.location.href = 'index.html';
+        }
+        
         const terminal = document.getElementById('terminal');
         const commandInput = document.getElementById('commandInput');
         const statusElement = document.getElementById('status');
         const accessLevelElement = document.getElementById('accessLevel');
         const serverStatusElement = document.getElementById('serverStatus');
+        const usernameDisplay = document.getElementById('username-display');
+        
+        // Установка имени пользователя
+        const username = localStorage.getItem('username') || 'Администратор';
+        usernameDisplay.textContent = username;
         
         // Фон с эффектом матрицы
         const canvas = document.getElementById('matrix-bg');
@@ -680,7 +775,7 @@
         
         // Переключение инструментов
         function toggleTool(toolId) {
-            const tools = document.querySelectorAll('.ip-scanner, .port-scanner, .hash-generator, .password-checker, .text-encoder, .network-simulator');
+            const tools = document.querySelectorAll('.ip-scanner, .port-scanner, .hash-generator, .password-checker, .settings-panel');
             tools.forEach(tool => {
                 tool.style.display = 'none';
             });
@@ -810,73 +905,49 @@
             }, 1000);
         }
         
-        // Шифрование текста
-        function encodeText() {
-            const text = document.getElementById('encode-input').value;
-            if (!text) {
-                document.getElementById('encode-result').innerHTML = '> ОШИБКА: Введите текст';
-                return;
-            }
-            
-            document.getElementById('encode-result').innerHTML = '> Шифрование...';
-            
-            setTimeout(() => {
-                const encoded = btoa(unescape(encodeURIComponent(text)));
-                document.getElementById('encode-result').innerHTML = '> Зашифрованный текст:<br>' + encoded;
-            }, 1000);
+        // Функции для работы с учетной записью
+        function toggleUserMenu() {
+            const menu = document.getElementById('user-menu');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
         }
         
-        // Дешифрование текста
-        function decodeText() {
-            const text = document.getElementById('encode-input').value;
-            if (!text) {
-                document.getElementById('encode-result').innerHTML = '> ОШИБКА: Введите текст';
-                return;
-            }
-            
-            document.getElementById('encode-result').innerHTML = '> Дешифрование...';
-            
-            setTimeout(() => {
-                try {
-                    const decoded = decodeURIComponent(escape(atob(text)));
-                    document.getElementById('encode-result').innerHTML = '> Расшифрованный текст:<br>' + decoded;
-                } catch (e) {
-                    document.getElementById('encode-result').innerHTML = '> ОШИБКА: Неверный формат шифрованного текста';
-                }
-            }, 1000);
+        function showSettings() {
+            toggleTool('settings-panel');
+            document.getElementById('user-menu').style.display = 'none';
         }
         
-        // Симуляция сети
-        function startNetworkSim() {
-            const networkVis = document.getElementById('network-visualization');
-            networkVis.innerHTML = '';
+        function changePassword() {
+            document.getElementById('user-menu').style.display = 'none';
             
-            for (let i = 0; i < 50; i++) {
-                const node = document.createElement('div');
-                node.className = 'network-node';
-                networkVis.appendChild(node);
-            }
-            
-            const nodes = document.querySelectorAll('.network-node');
-            let count = 0;
-            
-            const interval = setInterval(() => {
-                if (count >= 20) {
-                    clearInterval(interval);
+            const newPassword = prompt('Введите новый пароль:');
+            if (newPassword) {
+                if (newPassword.length < 6) {
+                    alert('Пароль должен содержать не менее 6 символов!');
                     return;
                 }
                 
-                const randomNode = Math.floor(Math.random() * nodes.length);
-                nodes[randomNode].classList.add('active');
-                
-                setTimeout(() => {
-                    nodes[randomNode].classList.remove('active');
-                }, 800);
-                
-                count++;
-            }, 200);
+                // В реальном приложении здесь должен быть безопасный метод смены пароля
+                localStorage.setItem('password', newPassword);
+                alert('Пароль успешно изменен!');
+                addTerminalLine('> Пароль учетной записи изменен');
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('loggedIn');
+            window.location.href = 'index.html';
+        }
+        
+        function applySettings() {
+            const textColor = document.getElementById('text-color').value;
+            const animationSpeed = document.getElementById('animation-speed').value;
+            const opacity = document.getElementById('opacity-range').value;
             
-            document.getElementById('network-result').innerHTML = '<div>Имитация сетевой активности:</div>' + networkVis.outerHTML;
+            document.body.style.color = textColor;
+            document.querySelector('.container').style.background = `rgba(10, 15, 10, ${opacity})`;
+            
+            alert('Настройки применены!');
+            addTerminalLine('> Настройки системы обновлены');
         }
         
         // Случайные мерцания статуса для эффекта
@@ -899,6 +970,13 @@
         window.addEventListener('resize', function() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+        });
+        
+        // Закрытие меню при клике вне его
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.user-panel')) {
+                document.getElementById('user-menu').style.display = 'none';
+            }
         });
     </script>
 </body>
