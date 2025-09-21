@@ -308,11 +308,42 @@
         let scanProgress = 0;
         let hackProgress = 0;
         let decryptionProgress = 0;
+        let currentDir = '/root';
+        let commandHistory = [];
+        let historyIndex = -1;
+        
+        commandInput.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (commandHistory.length > 0) {
+                    if (historyIndex === -1) {
+                        historyIndex = commandHistory.length - 1;
+                    } else if (historyIndex > 0) {
+                        historyIndex--;
+                    }
+                    this.value = commandHistory[historyIndex];
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    this.value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = commandHistory.length;
+                    this.value = '';
+                }
+            }
+        });
         
         commandInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 const command = this.value.trim();
                 this.value = '';
+                
+                if (command) {
+                    commandHistory.push(command);
+                    historyIndex = commandHistory.length;
+                }
                 
                 addOutput(`<div class="command">>> ${command}</div>`);
                 
@@ -445,9 +476,6 @@
                 case 'proxy':
                     toggleProxy();
                     break;
-                case 'firewall':
-                    manageFirewall(args[1]);
-                    break;
                 case 'ports':
                     showOpenPorts();
                     break;
@@ -461,16 +489,16 @@
                     shutdownSystem();
                     break;
                 case 'alias':
-                    createAlias(args[1], args[2]);
+                    createAlias(args[1], args.slice(2).join(' '));
                     break;
                 case 'unlock':
                     unlockFeature(args[1]);
                     break;
                 case 'encode':
-                    encodeData(args[1], args[2]);
+                    encodeData(args[1], args.slice(2).join(' '));
                     break;
                 case 'decode':
-                    decodeData(args[1], args[2]);
+                    decodeData(args[1], args.slice(2).join(' '));
                     break;
                 case 'backdoor':
                     installBackdoor(args[1]);
@@ -484,7 +512,7 @@
                 case 'trojan':
                     deployTrojan(args[1]);
                     break;
-                case ' ransomware':
+                case 'ransomware':
                     deployRansomware(args[1]);
                     break;
                 case 'bitcoin':
@@ -496,17 +524,17 @@
                 case 'vpn':
                     toggleVPN();
                     break;
-                case ' stealth':
+                case 'stealth':
                     enableStealthMode();
                     break;
                 case 'password':
                     crackPassword(args[1]);
                     break;
                 case 'sql':
-                    sqlInjection(args[1]);
+                    sqlInjection(args.slice(1).join(' '));
                     break;
                 case 'xss':
-                    xssTest(args[1]);
+                    xssTest(args.slice(1).join(' '));
                     break;
                 case 'phishing':
                     startPhishing(args[1]);
@@ -523,7 +551,7 @@
                 case 'track':
                     trackUser(args[1]);
                     break;
-                case ' intercept':
+                case 'intercept':
                     interceptTraffic();
                     break;
                 case 'spoof':
@@ -539,7 +567,7 @@
                     reverseShell(args[1]);
                     break;
                 case 'botnet':
-                    controlBotnet(args[1]);
+                    controlBotnet(args.slice(1).join(' '));
                     break;
                 case 'zero':
                     useZeroDay(args[1]);
@@ -575,7 +603,7 @@
                     showDate();
                     break;
                 case 'weather':
-                    getWeather(args[1]);
+                    getWeather(args.slice(1).join(' '));
                     break;
                 case 'calc':
                     calculate(args.slice(1).join(' '));
@@ -589,7 +617,7 @@
                 case 'music':
                     playMusic();
                     break;
-                case ' joke':
+                case 'joke':
                     tellJoke();
                     break;
                 case 'quote':
@@ -793,6 +821,119 @@
             }, 500);
         }
         
+        function decryptFile(file) {
+            if (!file) {
+                addOutput('<div class="error">Укажите файл для дешифрования</div>');
+                return;
+            }
+            
+            addOutput(`<div class="result">Дешифрование ${file}...</div>`);
+            
+            decryptionProgress = 0;
+            const decryptInterval = setInterval(() => {
+                decryptionProgress += Math.floor(Math.random() * 15);
+                if (decryptionProgress >= 100) {
+                    clearInterval(decryptInterval);
+                    addOutput(`<div class="result">Файл ${file} успешно дешифрован!</div>`);
+                    addOutput('<div class="result">Содержимое: Важные данные для миссии</div>');
+                } else {
+                    addOutput(`<div class="result">Прогресс дешифрования: ${decryptionProgress}%</div>`);
+                }
+            }, 300);
+        }
+        
+        function bruteForce(target) {
+            if (!target) {
+                addOutput('<div class="error">Укажите цель для брутфорса</div>');
+                return;
+            }
+            
+            addOutput(`<div class="result">Запуск брутфорс атаки на ${target}...</div>`);
+            
+            const passwords = ['123456', 'password', 'admin', 'root', 'qwerty', 'letmein', 'welcome', 'monkey', 'password1', '123456789'];
+            let attempt = 0;
+            
+            const bruteInterval = setInterval(() => {
+                attempt++;
+                const password = passwords[Math.floor(Math.random() * passwords.length)];
+                addOutput(`<div class="result">Попытка ${attempt}: ${password}</div>`);
+                
+                if (attempt >= 10) {
+                    clearInterval(bruteInterval);
+                    if (Math.random() > 0.7) {
+                        addOutput('<div class="result">Пароль найден: secret123</div>');
+                        addOutput('<div class="result">Доступ получен!</div>');
+                    } else {
+                        addOutput('<div class="error">Пароль не найден. Попробуйте другой словарь.</div>');
+                    }
+                }
+            }, 500);
+        }
+        
+        function sqlInjection(url) {
+            if (!url) {
+                addOutput('<div class="error">Укажите URL для SQL инъекции</div>');
+                return;
+            }
+            
+            addOutput(`<div class="result">Попытка SQL инъекции на ${url}...</div>`);
+            
+            setTimeout(() => {
+                if (Math.random() > 0.5) {
+                    addOutput('<div class="result">Уязвимость найдена! Успешная инъекция.</div>');
+                    addOutput('<div class="result">Получены данные из базы данных:</div>');
+                    addOutput('<div class="result">- users: 152 записи</div>');
+                    addOutput('<div class="result">- passwords: 152 хеша</div>');
+                    addOutput('<div class="result">- transactions: 2047 записей</div>');
+                } else {
+                    addOutput('<div class="error">SQL инъекция не удалась. Сайт защищен.</div>');
+                }
+            }, 3000);
+        }
+        
+        function toggleKeylogger() {
+            addOutput('<div class="result">Переключение кейлоггера...</div>');
+            setTimeout(() => {
+                addOutput('<div class="result">Кейлоггер активирован и скрыт в системе.</div>');
+                addOutput('<div class="result">Логи будут сохранены в /var/log/keys.log</div>');
+            }, 1500);
+        }
+        
+        function geoLocateIP(ip) {
+            if (!ip) {
+                addOutput('<div class="error">Укажите IP для геолокации</div>');
+                return;
+            }
+            
+            addOutput(`<div class="result">Геолокация IP: ${ip}...</div>`);
+            
+            setTimeout(() => {
+                addOutput('<div class="result">Результаты геолокации:</div>');
+                addOutput('<div class="result">- Страна: Россия</div>');
+                addOutput('<div class="result">- Город: Москва</div>');
+                addOutput('<div class="result">- Провайдер: Ростелеком</div>');
+                addOutput('<div class="result">- Координаты: 55.7558° N, 37.6173° E</div>');
+            }, 2000);
+        }
+        
+        function pingHost(host) {
+            if (!host) {
+                addOutput('<div class="error">Укажите хост для ping</div>');
+                return;
+            }
+            
+            addOutput(`<div class="result">Ping ${host}...</div>`);
+            
+            setTimeout(() => {
+                addOutput('<div class="result">64 bytes from 192.168.1.1: icmp_seq=0 ttl=64 time=1.123 ms</div>');
+                addOutput('<div class="result">64 bytes from 192.168.1.1: icmp_seq=1 ttl=64 time=0.987 ms</div>');
+                addOutput('<div class="result">64 bytes from 192.168.1.1: icmp_seq=2 ttl=64 time=1.045 ms</div>');
+                addOutput('<div class="result">64 bytes from 192.168.1.1: icmp_seq=3 ttl=64 time=1.201 ms</div>');
+                addOutput('<div class="result">--- ping statistics ---</div>');
+                addOutput('<div class="result">4 packets transmitted, 4 received, 0% packet loss</div>');
+            }, 1000);
+        }
+        
         // Безопасная эмуляция Python
         function safePythonEval(code) {
             // Ограниченная эмуляция Python для безопасности
@@ -867,53 +1008,212 @@
         });
         
         // Дополнительные функции для команд
-        function decryptFile(file) {
+        function encryptFile(file) {
             if (!file) {
-                addOutput('<div class="error">Укажите файл для дешифрования</div>');
+                addOutput('<div class="error">Укажите файл для шифрования</div>');
                 return;
             }
             
-            addOutput(`<div class="result">Дешифрование ${file}...</div>`);
-            
-            decryptionProgress = 0;
-            const decryptInterval = setInterval(() => {
-                decryptionProgress += Math.floor(Math.random() * 15);
-                if (decryptionProgress >= 100) {
-                    clearInterval(decryptInterval);
-                    addOutput(`<div class="result">Файл ${file} успешно дешифрован!</div>`);
-                    addOutput('<div class="result">Содержимое: Важные данные для миссии</div>');
-                } else {
-                    addOutput(`<div class="result">Прогресс дешифрования: ${decryptionProgress}%</div>`);
-                }
-            }, 300);
+            addOutput(`<div class="result">Шифрование ${file}...</div>`);
+            setTimeout(() => {
+                addOutput(`<div class="result">Файл ${file} успешно зашифрован с использованием AES-256.</div>`);
+            }, 2000);
         }
         
-        function bruteForce(target) {
-            if (!target) {
-                addOutput('<div class="error">Укажите цель для брутфорса</div>');
+        function downloadFile(file) {
+            if (!file) {
+                addOutput('<div class="error">Укажите файл для загрузки</div>');
                 return;
             }
             
-            addOutput(`<div class="result">Запуск брутфорс атаки на ${target}...</div>`);
+            addOutput(`<div class="result">Загрузка ${file}...</div>`);
+            setTimeout(() => {
+                addOutput(`<div class="result">Файл ${file} успешно загружен в /downloads/</div>`);
+            }, 1500);
+        }
+        
+        function uploadFile(file) {
+            if (!file) {
+                addOutput('<div class="error">Укажите файл для выгрузки</div>');
+                return;
+            }
             
-            const passwords = ['123456', 'password', 'admin', 'root', 'qwerty', 'letmein', 'welcome', 'monkey', 'password1', '123456789'];
-            let attempt = 0;
+            addOutput(`<div class="result">Выгрузка ${file}...</div>`);
+            setTimeout(() => {
+                addOutput(`<div class="result">Файл ${file} успешно выгружен на удаленный сервер.</div>`);
+            }, 1500);
+        }
+        
+        function showHistory() {
+            addOutput('<div class="result">История команд:</div>');
+            if (commandHistory.length === 0) {
+                addOutput('<div class="result">История команд пуста.</div>');
+            } else {
+                commandHistory.forEach((cmd, index) => {
+                    addOutput(`<div class="result">${index + 1}. ${cmd}</div>`);
+                });
+            }
+        }
+        
+        function showUserInfo() {
+            addOutput('<div class="result">Информация о пользователе:</div>');
+            addOutput('<div class="result">Имя: Saito</div>');
+            addOutput('<div class="result">Уровень доступа: ROOT</div>');
+            addOutput('<div class="result">Последний вход: сегодня 14:32</div>');
+            addOutput('<div class="result">IP адрес: 192.168.1.107</div>');
+        }
+        
+        function showCurrentDirectory() {
+            addOutput(`<div class="result">Текущая директория: ${currentDir}</div>`);
+        }
+        
+        function listFiles() {
+            addOutput('<div class="result">Содержимое директории:</div>');
+            addOutput('<div class="result">drwxr-xr-x   root root  4096 Dec 10 14:30 documents</div>');
+            addOutput('<div class="result">drwxr-xr-x   root root  4096 Dec 10 14:31 downloads</div>');
+            addOutput('<div class="result">-rw-r--r--   root root  1024 Dec 10 14:25 secret.txt</div>');
+            addOutput('<div class="result">-rwxr-xr-x   root root  2048 Dec 10 14:20 hacktool.py</div>');
+        }
+        
+        function changeDirectory(dir) {
+            if (!dir) {
+                addOutput('<div class="error">Укажите директорию</div>');
+                return;
+            }
             
-            const bruteInterval = setInterval(() => {
-                attempt++;
-                const password = passwords[Math.floor(Math.random() * passwords.length)];
-                addOutput(`<div class="result">Попытка ${attempt}: ${password}</div>`);
-                
-                if (attempt >= 10) {
-                    clearInterval(bruteInterval);
-                    if (Math.random() > 0.7) {
-                        addOutput('<div class="result">Пароль найден: secret123</div>');
-                        addOutput('<div class="result">Доступ получен!</div>');
-                    } else {
-                        addOutput('<div class="error">Пароль не найден. Попробуйте другой словарь.</div>');
-                    }
-                }
-            }, 500);
+            if (dir === '..') {
+                currentDir = currentDir.substring(0, currentDir.lastIndexOf('/'));
+                if (currentDir === '') currentDir = '/';
+            } else if (dir.startsWith('/')) {
+                currentDir = dir;
+            } else {
+                currentDir += '/' + dir;
+            }
+            
+            addOutput(`<div class="result">Текущая директория изменена на: ${currentDir}</div>`);
+        }
+        
+        function showFileContent(file) {
+            if (!file) {
+                addOutput('<div class="error">Укажите файл</div>');
+                return;
+            }
+            
+            addOutput(`<div class="result">Содержимое файла ${file}:</div>`);
+            
+            if (file === 'secret.txt') {
+                addOutput('<div class="result">Это секретный файл с важной информацией.</div>');
+                addOutput('<div class="result">Миссия: проникнуть в главный сервер и получить данные.</div>');
+                addOutput('<div class="result">Код доступа: 7X9A-2B4C-8D3E-1F5G</div>');
+            } else {
+                addOutput('<div class="result">Содержимое файла недоступно для чтения.</div>');
+            }
+        }
+        
+        function deleteFile(file) {
+            if (!file) {
+                addOutput('<div class="error">Укажите файл для удаления</div>');
+                return;
+            }
+            
+            addOutput(`<div class="result">Удаление ${file}...</div>`);
+            setTimeout(() => {
+                addOutput(`<div class="result">Файл ${file} успешно удален.</div>`);
+            }, 1000);
+        }
+        
+        function createDirectory(dir) {
+            if (!dir) {
+                addOutput('<div class="error">Укажите имя директории</div>');
+                return;
+            }
+            
+            addOutput(`<div class="result">Создание директории ${dir}...</div>`);
+            setTimeout(() => {
+                addOutput(`<div class="result">Директория ${dir} успешно создана.</div>`);
+            }, 1000);
+        }
+        
+        function traceRoute(host) {
+            if (!host) {
+                addOutput('<div class="error">Укажите хост для трассировки</div>');
+                return;
+            }
+            
+            addOutput(`<div class="result">Трассировка маршрута к ${host}...</div>`);
+            
+            setTimeout(() => {
+                addOutput('<div class="result"> 1  192.168.1.1  1.234 ms  1.123 ms  1.456 ms</div>');
+                addOutput('<div class="result"> 2  10.10.10.1  12.345 ms  11.987 ms  12.123 ms</div>');
+                addOutput('<div class="result"> 3  213.180.204.3  23.456 ms  22.123 ms  21.987 ms</div>');
+                addOutput('<div class="result"> 4  77.88.55.60  24.567 ms  23.876 ms  24.123 ms</div>');
+                addOutput('<div class="result">Трассировка завершена.</div>');
+            }, 2000);
+        }
+        
+        function showCryptoInfo() {
+            addOutput('<div class="result">Информация о криптосистеме:</div>');
+            addOutput('<div class="result">- RSA-4096: АКТИВЕН</div>');
+            addOutput('<div class="result">- AES-256: АКТИВЕН</div>');
+            addOutput('<div class="result">- SHA-512: АКТИВЕН</div>');
+            addOutput('<div class="result">- Elliptic Curve: АКТИВЕН</div>');
+            addOutput('<div class="result">Ключи шифрования обновлены: сегодня 12:00</div>');
+        }
+        
+        function toggleProxy() {
+            addOutput('<div class="result">Переключение прокси-сервера...</div>');
+            setTimeout(() => {
+                addOutput('<div class="result">Прокси-сервер активирован: 194.135.92.74:8080</div>');
+                addOutput('<div class="result">Анонимность: ВЫСОКАЯ</div>');
+            }, 1500);
+        }
+        
+        function showOpenPorts() {
+            addOutput('<div class="result">Открытые порты:</div>');
+            addOutput('<div class="result">- 22/tcp (SSH) - ОТКРЫТ</div>');
+            addOutput('<div class="result">- 80/tcp (HTTP) - ОТКРЫТ</div>');
+            addOutput('<div class="result">- 443/tcp (HTTPS) - ОТКРЫТ</div>');
+            addOutput('<div class="result">- 1337/tcp (CUSTOM) - ОТКРЫТ</div>');
+        }
+        
+        function listServices() {
+            addOutput('<div class="result">Активные сервисы:</div>');
+            addOutput('<div class="result">- sshd (SSH сервер) - АКТИВЕН</div>');
+            addOutput('<div class="result">- apache2 (Веб сервер) - АКТИВЕН</div>');
+            addOutput('<div class="result">- mysql (База данных) - АКТИВЕН</div>');
+            addOutput('<div class="result">- hacktools (Хакерские утилиты) - АКТИВЕН</div>');
+        }
+        
+        function rebootSystem() {
+            addOutput('<div class="result">Перезагрузка системы...</div>');
+            setTimeout(() => {
+                addOutput('<div class="result">Система будет перезагружена через 5 секунд...</div>');
+                setTimeout(() => {
+                    terminalOutput.innerHTML = `
+                        <div class="output">Инициализация системы... <span class="result">УСПЕХ</span></div>
+                        <div class="output">Загрузка защищенных модулей... <span class="result">УСПЕХ</span></div>
+                        <div class="output">Подключение к главному серверу... <span class="result">УСПЕХ</span></div>
+                        <div class="output">Введите '<span class="command">help</span>' для списка команд</div>
+                    `;
+                }, 5000);
+            }, 1000);
+        }
+        
+        function shutdownSystem() {
+            addOutput('<div class="result">Выключение системы...</div>');
+            setTimeout(() => {
+                addOutput('<div class="result">Система будет выключена через 5 секунд...</div>');
+                setTimeout(() => {
+                    document.getElementById('login-screen').style.display = 'flex';
+                    document.getElementById('terminal').style.display = 'none';
+                    terminalOutput.innerHTML = `
+                        <div class="output">Инициализация системы... <span class="result">УСПЕХ</span></div>
+                        <div class="output">Загрузка защищенных модулей... <span class="result">УСПЕХ</span></div>
+                        <div class="output">Подключение к главному серверу... <span class="result">УСПЕХ</span></div>
+                        <div class="output">Введите '<span class="command">help</span>' для списка команд</div>
+                    `;
+                }, 5000);
+            }, 1000);
         }
         
         // Инициализация
