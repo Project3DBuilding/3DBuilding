@@ -198,6 +198,44 @@
         #terminal-output::-webkit-scrollbar-thumb {
             background: #00ff00;
         }
+        
+        .achievement-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #001100;
+            border: 1px solid #00ff00;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px #00ff00;
+            transform: translateX(100%);
+            transition: transform 0.5s;
+            z-index: 1000;
+        }
+        
+        .achievement-notification.show {
+            transform: translateX(0);
+        }
+        
+        .suggestion-box {
+            position: absolute;
+            bottom: 40px;
+            background: #001100;
+            border: 1px solid #00ff00;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
+            z-index: 50;
+        }
+        
+        .suggestion-item {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        
+        .suggestion-item:hover {
+            background: #003300;
+        }
     </style>
 </head>
 <body>
@@ -214,13 +252,14 @@
             </div>
             <button class="login-btn" id="login-btn">Войти</button>
             <div class="error-message" id="error-message">Неверные учетные данные</div>
+            <div class="error-message" id="blocked-message" style="display: none; color: #ff6600;">Система заблокирована. Попробуйте позже.</div>
         </div>
     </div>
 
     <div class="terminal-container" id="terminal">
         <div class="terminal-header">
             <div>SAITO TERMINAL v2.4.1 // [SECURE MODE: ACTIVE]</div>
-            <div>USER: <span id="user-display">GUEST</span></div>
+            <div>USER: <span id="user-display">GUEST</span> | ACHV: <span id="achievement-count">0</span></div>
         </div>
         <div class="terminal-body" id="terminal-output">
             <div class="output">Инициализация системы... <span class="result">УСПЕХ</span></div>
@@ -232,14 +271,179 @@
             <span class="prompt">>></span>
             <input type="text" id="command-input" autocomplete="off">
         </div>
+        <div class="suggestion-box" id="suggestion-box"></div>
     </div>
 
     <canvas class="matrix-bg" id="matrix-bg"></canvas>
     <div class="security-notice">// ВАША АКТИВНОСТЬ МОНИТОРИТСЯ СИСТЕМАМИ БЕЗОПАСНОСТИ</div>
+    <div class="achievement-notification" id="achievement-notification">
+        <div class="system">ДОСТИЖЕНИЕ РАЗБЛОКИРОВАНО!</div>
+        <div id="achievement-desc"></div>
+    </div>
 
     <script>
-        // Логин система
-        document.getElementById('login-btn').addEventListener('click', function() {
+        // Конфигурация системы
+        const CONFIG = {
+            loginAttempts: 0,
+            maxLoginAttempts: 5,
+            blockTime: 30000, // 30 секунд блокировки
+            sessionTimeout: 1800000, // 30 минут бездействия
+            keyloggerActive: false,
+            achievements: {},
+            commandsUsed: {},
+            vpnActive: false,
+            stealthMode: false,
+            proxyActive: false,
+            sessionStart: null,
+            currentDir: '/root',
+            fileSystem: {
+                '/root': {
+                    type: 'dir',
+                    content: {
+                        'documents': { type: 'dir' },
+                        'downloads': { type: 'dir' },
+                        'secret.txt': { 
+                            type: 'file', 
+                            content: 'Это секретный файл с важной информацией.\nМиссия: проникнуть в главный сервер и получить данные.\nКод доступа: 7X9A-2B4C-8D3E-1F5G' 
+                        },
+                        'hacktool.py': { 
+                            type: 'file', 
+                            content: '#!/usr/bin/python3\n\n# Хакерский инструмент\n# Используйте с осторожностью\n\ndef main():\n    print("Хакерский инструмент активирован")\n    \nif __name__ == "__main__":\n    main()' 
+                        }
+                    }
+                },
+                '/root/documents': {
+                    type: 'dir',
+                    content: {
+                        'mission.txt': { 
+                            type: 'file', 
+                            content: 'Миссия: Проникнуть в сервер Пентагона и получить доступ к файлам уровня "Совершенно секретно".\nДата выполнения: до 31.12.2023\nНаграда: 2.5 BTC' 
+                        },
+                        'contacts.txt': { 
+                            type: 'file', 
+                            content: 'Контакты:\n- Агент X: x123@darkmail.org\n- Агент Y: y456@darkmail.org\n- Источник: source789@protonmail.com' 
+                        }
+                    }
+                },
+                '/root/downloads': {
+                    type: 'dir',
+                    content: {
+                        'passwords.txt': { 
+                            type: 'file', 
+                            content: 'Список паролей:\nadmin:password123\nroot:toor\nuser:123456\nguest:guest' 
+                        },
+                        'plans.pdf': { 
+                            type: 'file', 
+                            content: 'Файл заблокирован. Для доступа требуется дешифровка.' 
+                        }
+                    }
+                }
+            }
+        };
+
+        // Инициализация системы
+        function initSystem() {
+            loadSession();
+            setupEventListeners();
+            startSessionTimer();
+            setupMatrixAnimation();
+            checkAchievements();
+            
+            // Восстановление состояния системы из localStorage
+            const savedState = localStorage.getItem('terminal_state');
+            if (savedState) {
+                try {
+                    const state = JSON.parse(savedState);
+                    CONFIG.keyloggerActive = state.keyloggerActive || false;
+                    CONFIG.vpnActive = state.vpnActive || false;
+                    CONFIG.stealthMode = state.stealthMode || false;
+                    CONFIG.proxyActive = state.proxyActive || false;
+                    CONFIG.currentDir = state.currentDir || '/root';
+                    
+                    if (state.achievements) {
+                        CONFIG.achievements = state.achievements;
+                        updateAchievementCounter();
+                    }
+                } catch (e) {
+                    console.error('Ошибка восстановления состояния:', e);
+                }
+            }
+        }
+
+        // Загрузка сессии
+        function loadSession() {
+            const savedSession = localStorage.getItem('terminal_session');
+            if (savedSession) {
+                try {
+                    const session = JSON.parse(savedSession);
+                    if (session.loggedIn) {
+                        document.getElementById('login-screen').style.display = 'none';
+                        document.getElementById('terminal').style.display = 'flex';
+                        document.getElementById('user-display').textContent = session.username;
+                        document.getElementById('command-input').focus();
+                        
+                        addOutput(`<div class="output"><span class="system">Сессия восстановлена. Добро пожаловать, ${session.username}.</span></div>`);
+                    }
+                } catch (e) {
+                    console.error('Ошибка загрузки сессии:', e);
+                }
+            }
+        }
+
+        // Сохранение сессии
+        function saveSession(username) {
+            const session = {
+                loggedIn: true,
+                username: username,
+                timestamp: new Date().getTime()
+            };
+            localStorage.setItem('terminal_session', JSON.stringify(session));
+        }
+
+        // Сохранение состояния системы
+        function saveSystemState() {
+            const state = {
+                keyloggerActive: CONFIG.keyloggerActive,
+                vpnActive: CONFIG.vpnActive,
+                stealthMode: CONFIG.stealthMode,
+                proxyActive: CONFIG.proxyActive,
+                currentDir: CONFIG.currentDir,
+                achievements: CONFIG.achievements
+            };
+            localStorage.setItem('terminal_state', JSON.stringify(state));
+        }
+
+        // Настройка обработчиков событий
+        function setupEventListeners() {
+            // Логин система
+            document.getElementById('login-btn').addEventListener('click', handleLogin);
+            document.getElementById('password').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    handleLogin();
+                }
+            });
+
+            // Обработка команд
+            document.getElementById('command-input').addEventListener('keydown', handleCommandInput);
+            document.getElementById('command-input').addEventListener('input', handleInputChange);
+            
+            // Защита от инспектирования кода
+            document.addEventListener('keydown', handleSecurityKeys);
+            document.addEventListener('contextmenu', handleContextMenu);
+            
+            // Обработка бездействия
+            document.addEventListener('mousemove', resetSessionTimer);
+            document.addEventListener('keypress', resetSessionTimer);
+        }
+
+        // Обработчик входа в систему
+        function handleLogin() {
+            if (CONFIG.loginAttempts >= CONFIG.maxLoginAttempts) {
+                document.getElementById('error-message').style.display = 'none';
+                document.getElementById('blocked-message').style.display = 'block';
+                return;
+            }
+            
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
@@ -249,100 +453,49 @@
                 document.getElementById('user-display').textContent = username;
                 document.getElementById('command-input').focus();
                 
+                // Сброс счетчика попыток
+                CONFIG.loginAttempts = 0;
+                
+                // Сохранение сессии
+                saveSession(username);
+                
                 // Добавляем приветственное сообщение
-                addOutput('<div class="output"><span class="system">Добро пожаловать, ' + username + '. Глобальная сеть ждет ваших команд.</span></div>');
+                addOutput(`<div class="output"><span class="system">Добро пожаловать, ${username}. Глобальная сеть ждет ваших команд.</span></div>`);
+                
+                // Разблокируем первое достижение
+                unlockAchievement('first_login', 'Первый вход в систему');
             } else {
+                CONFIG.loginAttempts++;
                 document.getElementById('error-message').style.display = 'block';
+                
+                if (CONFIG.loginAttempts >= CONFIG.maxLoginAttempts) {
+                    document.getElementById('error-message').style.display = 'none';
+                    document.getElementById('blocked-message').style.display = 'block';
+                    
+                    // Блокировка на 30 секунд
+                    setTimeout(() => {
+                        CONFIG.loginAttempts = 0;
+                        document.getElementById('blocked-message').style.display = 'none';
+                    }, CONFIG.blockTime);
+                }
             }
-        });
-        
-        document.getElementById('password').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('login-btn').click();
-            }
-        });
+        }
 
-        // Matrix background effect
-        const canvas = document.getElementById('matrix-bg');
-        const ctx = canvas.getContext('2d');
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        
-        const letters = '01010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101';
-        const fontSize = 12;
-        const columns = canvas.width / fontSize;
-        
-        const drops = [];
-        for (let i = 0; i < columns; i++) {
-            drops[i] = 1;
-        }
-        
-        function drawMatrix() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Обработчик ввода команд
+        function handleCommandInput(e) {
+            const input = document.getElementById('command-input');
             
-            ctx.fillStyle = '#00ff00';
-            ctx.font = `${fontSize}px monospace`;
-            
-            for (let i = 0; i < drops.length; i++) {
-                const text = letters[Math.floor(Math.random() * letters.length)];
-                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-                
-                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                    drops[i] = 0;
-                }
-                
-                drops[i]++;
-            }
-        }
-        
-        setInterval(drawMatrix, 33);
-        
-        // Терминал функциональность
-        const terminalOutput = document.getElementById('terminal-output');
-        const commandInput = document.getElementById('command-input');
-        
-        let pythonMode = false;
-        let currentMode = 'main';
-        let scanProgress = 0;
-        let hackProgress = 0;
-        let decryptionProgress = 0;
-        let currentDir = '/root';
-        let commandHistory = [];
-        let historyIndex = -1;
-        
-        commandInput.addEventListener('keydown', function(e) {
-            if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                if (commandHistory.length > 0) {
-                    if (historyIndex === -1) {
-                        historyIndex = commandHistory.length - 1;
-                    } else if (historyIndex > 0) {
-                        historyIndex--;
-                    }
-                    this.value = commandHistory[historyIndex];
-                }
-            } else if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                if (historyIndex < commandHistory.length - 1) {
-                    historyIndex++;
-                    this.value = commandHistory[historyIndex];
-                } else {
-                    historyIndex = commandHistory.length;
-                    this.value = '';
-                }
-            }
-        });
-        
-        commandInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                const command = this.value.trim();
-                this.value = '';
+                const command = input.value.trim();
+                input.value = '';
                 
                 if (command) {
-                    commandHistory.push(command);
-                    historyIndex = commandHistory.length;
+                    CONFIG.commandHistory = CONFIG.commandHistory || [];
+                    CONFIG.commandHistory.push(command);
+                    CONFIG.historyIndex = CONFIG.commandHistory.length;
+                    
+                    // Отслеживание использования команд
+                    trackCommandUsage(command);
                 }
                 
                 addOutput(`<div class="command">>> ${command}</div>`);
@@ -351,382 +504,756 @@
                 processCommand(command);
                 
                 // Автоскролл вниз
+                const terminalOutput = document.getElementById('terminal-output');
                 terminalOutput.scrollTop = terminalOutput.scrollHeight;
-            }
-        });
-        
-        function addOutput(html) {
-            terminalOutput.innerHTML += html;
-        }
-        
-        function processCommand(command) {
-            if (pythonMode) {
-                if (command === 'exit()') {
-                    addOutput('<div class="result">Выход из Python интерпретатора</div>');
-                    pythonMode = false;
-                } else {
-                    try {
-                        // Безопасное выполнение кода Python (эмуляция)
-                        const result = safePythonEval(command);
-                        addOutput(`<div class="result">${result}</div>`);
-                    } catch (error) {
-                        addOutput(`<div class="error">Ошибка: ${error.message}</div>`);
+                
+                // Скрываем подсказки
+                document.getElementById('suggestion-box').style.display = 'none';
+            } 
+            else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (CONFIG.commandHistory && CONFIG.commandHistory.length > 0) {
+                    if (CONFIG.historyIndex === undefined || CONFIG.historyIndex === -1) {
+                        CONFIG.historyIndex = CONFIG.commandHistory.length - 1;
+                    } else if (CONFIG.historyIndex > 0) {
+                        CONFIG.historyIndex--;
                     }
+                    input.value = CONFIG.commandHistory[CONFIG.historyIndex];
                 }
+            } 
+            else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (CONFIG.commandHistory && CONFIG.historyIndex < CONFIG.commandHistory.length - 1) {
+                    CONFIG.historyIndex++;
+                    input.value = CONFIG.commandHistory[CONFIG.historyIndex];
+                } else {
+                    CONFIG.historyIndex = CONFIG.commandHistory.length;
+                    input.value = '';
+                }
+            }
+            else if (e.key === 'Tab') {
+                e.preventDefault();
+                autoCompleteCommand(input);
+            }
+        }
+
+        // Обработчик изменения ввода для автодополнения
+        function handleInputChange(e) {
+            const input = e.target;
+            showSuggestions(input.value);
+        }
+
+        // Автодополнение команд
+        function autoCompleteCommand(input) {
+            const text = input.value;
+            if (!text) return;
+            
+            const commands = Object.keys(COMMAND_LIST);
+            const matches = commands.filter(cmd => cmd.startsWith(text));
+            
+            if (matches.length === 1) {
+                input.value = matches[0] + ' ';
+            } else if (matches.length > 1) {
+                // Показываем все возможные варианты
+                showSuggestions(text, matches);
+            }
+        }
+
+        // Показ подсказок для автодополнения
+        function showSuggestions(text, matches = null) {
+            if (!text) {
+                document.getElementById('suggestion-box').style.display = 'none';
+                return;
+            }
+            
+            const commands = matches || Object.keys(COMMAND_LIST).filter(cmd => cmd.startsWith(text));
+            const suggestionBox = document.getElementById('suggestion-box');
+            
+            if (commands.length === 0) {
+                suggestionBox.style.display = 'none';
+                return;
+            }
+            
+            suggestionBox.innerHTML = '';
+            commands.forEach(cmd => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = cmd;
+                item.addEventListener('click', () => {
+                    document.getElementById('command-input').value = cmd + ' ';
+                    suggestionBox.style.display = 'none';
+                    document.getElementById('command-input').focus();
+                });
+                suggestionBox.appendChild(item);
+            });
+            
+            suggestionBox.style.display = 'block';
+        }
+
+        // Отслеживание использования команд
+        function trackCommandUsage(command) {
+            const cmd = command.split(' ')[0].toLowerCase();
+            CONFIG.commandsUsed[cmd] = (CONFIG.commandsUsed[cmd] || 0) + 1;
+            
+            // Проверяем достижения, связанные с использованием команд
+            checkCommandAchievements(cmd);
+            
+            // Сохраняем состояние
+            saveSystemState();
+        }
+
+        // Обработка команд
+        function processCommand(command) {
+            if (CONFIG.pythonMode) {
+                handlePythonCommand(command);
                 return;
             }
             
             const args = command.split(' ');
             const cmd = args[0].toLowerCase();
             
-            switch(cmd) {
-                case 'help':
-                    showHelp();
-                    break;
-                case 'clear':
-                    terminalOutput.innerHTML = '';
-                    break;
-                case 'sysinfo':
-                    showSystemInfo();
-                    break;
-                case 'secure':
-                    runSecurityDiagnostics();
-                    break;
-                case 'python':
+            // Если команда существует в списке, выполняем ее
+            if (cmd && COMMAND_LIST[cmd]) {
+                COMMAND_LIST[cmd].func(args.slice(1));
+            } else if (cmd) {
+                addOutput(`<div class="error">Неизвестная команда: ${cmd}. Введите '<span class="command">help</span>' для списка команд.</div>`);
+            }
+        }
+
+        // Список всех команд с категориями
+        const COMMAND_LIST = {
+            'help': {
+                desc: 'показать справку по командам',
+                category: 'system',
+                func: () => showHelp()
+            },
+            'clear': {
+                desc: 'очистить терминал',
+                category: 'system',
+                func: () => { document.getElementById('terminal-output').innerHTML = ''; }
+            },
+            'sysinfo': {
+                desc: 'информация о системе',
+                category: 'system',
+                func: () => showSystemInfo()
+            },
+            'secure': {
+                desc: 'тест безопасности',
+                category: 'system',
+                func: () => runSecurityDiagnostics()
+            },
+            'python': {
+                desc: 'запуск Python интерпретатора',
+                category: 'system',
+                func: () => {
                     addOutput('<div class="result">Запуск Python интерпретатора...</div>');
                     addOutput('<div class="result">Введите код Python для выполнения. Для выхода введите "exit()"</div>');
-                    pythonMode = true;
-                    break;
-                case 'exit':
+                    CONFIG.pythonMode = true;
+                }
+            },
+            'exit': {
+                desc: 'выход из системы',
+                category: 'system',
+                func: () => {
                     addOutput('<div class="result">Завершение сеанса...</div>');
                     setTimeout(() => {
                         document.getElementById('login-screen').style.display = 'flex';
                         document.getElementById('terminal').style.display = 'none';
-                        terminalOutput.innerHTML = `
+                        document.getElementById('terminal-output').innerHTML = `
                             <div class="output">Инициализация системы... <span class="result">УСПЕХ</span></div>
                             <div class="output">Загрузка защищенных модулей... <span class="result">УСПЕХ</span></div>
                             <div class="output">Подключение к главному серверу... <span class="result">УСПЕХ</span></div>
                             <div class="output">Введите '<span class="command">help</span>' для списка команд</div>
                         `;
+                        localStorage.removeItem('terminal_session');
                     }, 1000);
-                    break;
-                case 'scan':
-                    scanNetwork(args[1]);
-                    break;
-                case 'connect':
-                    connectToHost(args[1]);
-                    break;
-                case 'hack':
-                    hackSystem(args[1]);
-                    break;
-                case 'decrypt':
-                    decryptFile(args[1]);
-                    break;
-                case 'encrypt':
-                    encryptFile(args[1]);
-                    break;
-                case 'bf':
-                    bruteForce(args[1]);
-                    break;
-                case 'download':
-                    downloadFile(args[1]);
-                    break;
-                case 'upload':
-                    uploadFile(args[1]);
-                    break;
-                case 'history':
-                    showHistory();
-                    break;
-                case 'whoami':
-                    showUserInfo();
-                    break;
-                case 'pwd':
-                    showCurrentDirectory();
-                    break;
-                case 'ls':
-                case 'dir':
-                    listFiles();
-                    break;
-                case 'cd':
-                    changeDirectory(args[1]);
-                    break;
-                case 'cat':
-                case 'type':
-                    showFileContent(args[1]);
-                    break;
-                case 'rm':
-                case 'del':
-                    deleteFile(args[1]);
-                    break;
-                case 'mkdir':
-                    createDirectory(args[1]);
-                    break;
-                case 'ping':
-                    pingHost(args[1]);
-                    break;
-                case 'tracert':
-                    traceRoute(args[1]);
-                    break;
-                case 'geoip':
-                    geoLocateIP(args[1]);
-                    break;
-                case 'crypto':
-                    showCryptoInfo();
-                    break;
-                case 'proxy':
-                    toggleProxy();
-                    break;
-                case 'ports':
-                    showOpenPorts();
-                    break;
-                case 'services':
-                    listServices();
-                    break;
-                case 'reboot':
-                    rebootSystem();
-                    break;
-                case 'shutdown':
-                    shutdownSystem();
-                    break;
-                case 'alias':
-                    createAlias(args[1], args.slice(2).join(' '));
-                    break;
-                case 'unlock':
-                    unlockFeature(args[1]);
-                    break;
-                case 'encode':
-                    encodeData(args[1], args.slice(2).join(' '));
-                    break;
-                case 'decode':
-                    decodeData(args[1], args.slice(2).join(' '));
-                    break;
-                case 'backdoor':
-                    installBackdoor(args[1]);
-                    break;
-                case 'keylog':
-                    toggleKeylogger();
-                    break;
-                case 'worm':
-                    deployWorm(args[1]);
-                    break;
-                case 'trojan':
-                    deployTrojan(args[1]);
-                    break;
-                case 'ransomware':
-                    deployRansomware(args[1]);
-                    break;
-                case 'bitcoin':
-                    mineBitcoin();
-                    break;
-                case 'ddos':
-                    startDDoS(args[1]);
-                    break;
-                case 'vpn':
-                    toggleVPN();
-                    break;
-                case 'stealth':
-                    enableStealthMode();
-                    break;
-                case 'password':
-                    crackPassword(args[1]);
-                    break;
-                case 'sql':
-                    sqlInjection(args.slice(1).join(' '));
-                    break;
-                case 'xss':
-                    xssTest(args.slice(1).join(' '));
-                    break;
-                case 'phishing':
-                    startPhishing(args[1]);
-                    break;
-                case 'bypass':
-                    bypassSecurity(args[1]);
-                    break;
-                case 'root':
-                    getRootAccess();
-                    break;
-                case 'mask':
-                    maskIdentity();
-                    break;
-                case 'track':
-                    trackUser(args[1]);
-                    break;
-                case 'intercept':
-                    interceptTraffic();
-                    break;
-                case 'spoof':
-                    spoofAddress(args[1]);
-                    break;
-                case 'analyze':
-                    analyzeCode(args[1]);
-                    break;
-                case 'exploit':
-                    exploitVulnerability(args[1]);
-                    break;
-                case 'reverse':
-                    reverseShell(args[1]);
-                    break;
-                case 'botnet':
-                    controlBotnet(args.slice(1).join(' '));
-                    break;
-                case 'zero':
-                    useZeroDay(args[1]);
-                    break;
-                case 'journal':
-                    showLogs();
-                    break;
-                case 'encryptfs':
-                    encryptFilesystem();
-                    break;
-                case 'decryptfs':
-                    decryptFilesystem();
-                    break;
-                case 'firewall':
-                    manageFirewall(args[1]);
-                    break;
-                case 'format':
-                    formatDrive(args[1]);
-                    break;
-                case 'ghost':
-                    ghostMode();
-                    break;
-                case 'satellite':
-                    accessSatellite(args[1]);
-                    break;
-                case 'nuclear':
-                    accessNuclearCodes();
-                    break;
-                case 'time':
-                    showTime();
-                    break;
-                case 'date':
-                    showDate();
-                    break;
-                case 'weather':
-                    getWeather(args.slice(1).join(' '));
-                    break;
-                case 'calc':
-                    calculate(args.slice(1).join(' '));
-                    break;
-                case 'matrix':
-                    enableMatrixMode();
-                    break;
-                case 'game':
-                    launchGame();
-                    break;
-                case 'music':
-                    playMusic();
-                    break;
-                case 'joke':
-                    tellJoke();
-                    break;
-                case 'quote':
-                    showQuote();
-                    break;
-                case 'hint':
-                    showHint();
-                    break;
-                case 'bonus':
-                    showBonus();
-                    break;
-                case 'secret':
-                    showSecret();
-                    break;
-                case 'easteregg':
-                    showEasterEgg();
-                    break;
-                case '': 
-                    // Пустая команда
-                    break;
-                default:
-                    addOutput(`<div class="error">Неизвестная команда: ${cmd}. Введите '<span class="command">help</span>' для списка команд.</div>`);
+                }
+            },
+            'scan': {
+                desc: 'сканирование сети [ip]',
+                category: 'network',
+                func: (args) => scanNetwork(args[0])
+            },
+            'connect': {
+                desc: 'подключение к хосту [host]',
+                category: 'network',
+                func: (args) => connectToHost(args[0])
+            },
+            'ping': {
+                desc: 'ping хоста [host]',
+                category: 'network',
+                func: (args) => pingHost(args[0])
+            },
+            'tracert': {
+                desc: 'трассировка маршрута [host]',
+                category: 'network',
+                func: (args) => traceRoute(args[0])
+            },
+            'geoip': {
+                desc: 'геолокация IP [ip]',
+                category: 'network',
+                func: (args) => geoLocateIP(args[0])
+            },
+            'proxy': {
+                desc: 'включить/выключить прокси',
+                category: 'network',
+                func: () => toggleProxy()
+            },
+            'vpn': {
+                desc: 'включить/выключить VPN',
+                category: 'network',
+                func: () => toggleVPN()
+            },
+            'ddos': {
+                desc: 'DDoS атака [target]',
+                category: 'attack',
+                func: (args) => startDDoS(args[0])
+            },
+            'hack': {
+                desc: 'взлом системы [target]',
+                category: 'attack',
+                func: (args) => hackSystem(args[0])
+            },
+            'bf': {
+                desc: 'брутфорс атака [target]',
+                category: 'attack',
+                func: (args) => bruteForce(args[0])
+            },
+            'sql': {
+                desc: 'SQL инъекция [url]',
+                category: 'attack',
+                func: (args) => sqlInjection(args.join(' '))
+            },
+            'xss': {
+                desc: 'XSS тест [url]',
+                category: 'attack',
+                func: (args) => xssTest(args.join(' '))
+            },
+            'phishing': {
+                desc: 'фишинг атака [target]',
+                category: 'attack',
+                func: (args) => startPhishing(args[0])
+            },
+            'bypass': {
+                desc: 'обход защиты [security]',
+                category: 'attack',
+                func: (args) => bypassSecurity(args[0])
+            },
+            'exploit': {
+                desc: 'использовать уязвимость [vuln]',
+                category: 'attack',
+                func: (args) => exploitVulnerability(args[0])
+            },
+            'zero': {
+                desc: 'использовать zero-day уязвимость [target]',
+                category: 'attack',
+                func: (args) => useZeroDay(args[0])
+            },
+            'password': {
+                desc: 'взломать пароль [hash]',
+                category: 'attack',
+                func: (args) => crackPassword(args[0])
+            },
+            'decrypt': {
+                desc: 'дешифрование файла [file]',
+                category: 'crypto',
+                func: (args) => decryptFile(args[0])
+            },
+            'encrypt': {
+                desc: 'шифрование файла [file]',
+                category: 'crypto',
+                func: (args) => encryptFile(args[0])
+            },
+            'crypto': {
+                desc: 'информация о криптосистеме',
+                category: 'crypto',
+                func: () => showCryptoInfo()
+            },
+            'encode': {
+                desc: 'кодировать данные [method] [data]',
+                category: 'crypto',
+                func: (args) => encodeData(args[0], args.slice(1).join(' '))
+            },
+            'decode': {
+                desc: 'декодировать данные [method] [data]',
+                category: 'crypto',
+                func: (args) => decodeData(args[0], args.slice(1).join(' '))
+            },
+            'encryptfs': {
+                desc: 'шифрование файловой системы',
+                category: 'crypto',
+                func: () => encryptFilesystem()
+            },
+            'decryptfs': {
+                desc: 'дешифрование файловой системы',
+                category: 'crypto',
+                func: () => decryptFilesystem()
+            },
+            'keylog': {
+                desc: 'включить/выключить кейлоггер',
+                category: 'spy',
+                func: () => toggleKeylogger()
+            },
+            'backdoor': {
+                desc: 'установить бэкдор [target]',
+                category: 'spy',
+                func: (args) => installBackdoor(args[0])
+            },
+            'track': {
+                desc: 'отслеживание пользователя [user]',
+                category: 'spy',
+                func: (args) => trackUser(args[0])
+            },
+            'intercept': {
+                desc: 'перехват трафика',
+                category: 'spy',
+                func: () => interceptTraffic()
+            },
+            'spoof': {
+                desc: 'подмена IP [ip]',
+                category: 'spy',
+                func: (args) => spoofAddress(args[0])
+            },
+            'worm': {
+                desc: 'запустить червя [target]',
+                category: 'malware',
+                func: (args) => deployWorm(args[0])
+            },
+            'trojan': {
+                desc: 'запустить троян [target]',
+                category: 'malware',
+                func: (args) => deployTrojan(args[0])
+            },
+            'ransomware': {
+                desc: 'запустить ransomware [target]',
+                category: 'malware',
+                func: (args) => deployRansomware(args[0])
+            },
+            'reverse': {
+                desc: 'обратная оболочка [ip]',
+                category: 'malware',
+                func: (args) => reverseShell(args[0])
+            },
+            'botnet': {
+                desc: 'управление ботнетом [command]',
+                category: 'malware',
+                func: (args) => controlBotnet(args.join(' '))
+            },
+            'pwd': {
+                desc: 'текущая директория',
+                category: 'files',
+                func: () => showCurrentDirectory()
+            },
+            'ls': {
+                desc: 'список файлов',
+                category: 'files',
+                func: () => listFiles()
+            },
+            'dir': {
+                desc: 'список файлов',
+                category: 'files',
+                func: () => listFiles()
+            },
+            'cd': {
+                desc: 'сменить директорию [dir]',
+                category: 'files',
+                func: (args) => changeDirectory(args[0])
+            },
+            'cat': {
+                desc: 'просмотр файла [file]',
+                category: 'files',
+                func: (args) => showFileContent(args[0])
+            },
+            'type': {
+                desc: 'просмотр файла [file]',
+                category: 'files',
+                func: (args) => showFileContent(args[0])
+            },
+            'rm': {
+                desc: 'удалить файл [file]',
+                category: 'files',
+                func: (args) => deleteFile(args[0])
+            },
+            'del': {
+                desc: 'удалить файл [file]',
+                category: 'files',
+                func: (args) => deleteFile(args[0])
+            },
+            'mkdir': {
+                desc: 'создать директорию [dir]',
+                category: 'files',
+                func: (args) => createDirectory(args[0])
+            },
+            'download': {
+                desc: 'загрузка файла [file]',
+                category: 'files',
+                func: (args) => downloadFile(args[0])
+            },
+            'upload': {
+                desc: 'выгрузка файла [file]',
+                category: 'files',
+                func: (args) => uploadFile(args[0])
+            },
+            'analyze': {
+                desc: 'анализ кода [file]',
+                category: 'files',
+                func: (args) => analyzeCode(args[0])
+            },
+            'format': {
+                desc: 'форматирование диска [drive]',
+                category: 'files',
+                func: (args) => formatDrive(args[0])
+            },
+            'history': {
+                desc: 'история команд',
+                category: 'utils',
+                func: () => showHistory()
+            },
+            'whoami': {
+                desc: 'информация о пользователе',
+                category: 'utils',
+                func: () => showUserInfo()
+            },
+            'ports': {
+                desc: 'показать открытые порты',
+                category: 'utils',
+                func: () => showOpenPorts()
+            },
+            'services': {
+                desc: 'список сервисов',
+                category: 'utils',
+                func: () => listServices()
+            },
+            'alias': {
+                desc: 'создать псевдоним [name] [command]',
+                category: 'utils',
+                func: (args) => createAlias(args[0], args.slice(1).join(' '))
+            },
+            'unlock': {
+                desc: 'разблокировать функцию [feature]',
+                category: 'utils',
+                func: (args) => unlockFeature(args[0])
+            },
+            'root': {
+                desc: 'получить root доступ',
+                category: 'utils',
+                func: () => getRootAccess()
+            },
+            'mask': {
+                desc: 'маскировка личности',
+                category: 'utils',
+                func: () => maskIdentity()
+            },
+            'stealth': {
+                desc: 'режим невидимки',
+                category: 'utils',
+                func: () => enableStealthMode()
+            },
+            'journal': {
+                desc: 'показать логи',
+                category: 'utils',
+                func: () => showLogs()
+            },
+            'ghost': {
+                desc: 'режим призрака',
+                category: 'utils',
+                func: () => ghostMode()
+            },
+            'reboot': {
+                desc: 'перезагрузка системы',
+                category: 'system',
+                func: () => rebootSystem()
+            },
+            'shutdown': {
+                desc: 'выключение системы',
+                category: 'system',
+                func: () => shutdownSystem()
+            },
+            'time': {
+                desc: 'текущее время',
+                category: 'info',
+                func: () => showTime()
+            },
+            'date': {
+                desc: 'текущая дата',
+                category: 'info',
+                func: () => showDate()
+            },
+            'weather': {
+                desc: 'прогноз погоды [city]',
+                category: 'info',
+                func: (args) => getWeather(args.join(' '))
+            },
+            'calc': {
+                desc: 'калькулятор [expression]',
+                category: 'info',
+                func: (args) => calculate(args.join(' '))
+            },
+            'bitcoin': {
+                desc: 'майнить биткоины',
+                category: 'fun',
+                func: () => mineBitcoin()
+            },
+            'satellite': {
+                desc: 'доступ к спутнику [id]',
+                category: 'fun',
+                func: (args) => accessSatellite(args[0])
+            },
+            'nuclear': {
+                desc: 'доступ к ядерным кодам',
+                category: 'fun',
+                func: () => accessNuclearCodes()
+            },
+            'matrix': {
+                desc: 'режим матрицы',
+                category: 'fun',
+                func: () => enableMatrixMode()
+            },
+            'game': {
+                desc: 'запустить игру',
+                category: 'fun',
+                func: () => launchGame()
+            },
+            'music': {
+                desc: 'включить музыку',
+                category: 'fun',
+                func: () => playMusic()
+            },
+            'joke': {
+                desc: 'случайная шутка',
+                category: 'fun',
+                func: () => tellJoke()
+            },
+            'quote': {
+                desc: 'случайная цитата',
+                category: 'fun',
+                func: () => showQuote()
+            },
+            'hint': {
+                desc: 'показать подсказку',
+                category: 'fun',
+                func: () => showHint()
+            },
+            'bonus': {
+                desc: 'бонусная функция',
+                category: 'fun',
+                func: () => showBonus()
+            },
+            'secret': {
+                desc: 'секретная команда',
+                category: 'fun',
+                func: () => showSecret()
+            },
+            'easteregg': {
+                desc: 'пасхальное яйцо',
+                category: 'fun',
+                func: () => showEasterEgg()
+            }
+        };
+
+        // Показ справки с группировкой по категориям
+        function showHelp() {
+            const categories = {
+                'system': 'Системные команды',
+                'network': 'Сетевые команды',
+                'attack': 'Атаки и взлом',
+                'crypto': 'Криптография',
+                'spy': 'Шпионаж',
+                'malware': 'Вредоносное ПО',
+                'files': 'Файловая система',
+                'utils': 'Утилиты',
+                'info': 'Информация',
+                'fun': 'Развлечения'
+            };
+            
+            addOutput('<div class="result">Доступные команды:</div>');
+            
+            for (const [categoryId, categoryName] of Object.entries(categories)) {
+                addOutput(`<div class="result" style="margin-top: 10px; color: #0088ff;">${categoryName}:</div>`);
+                
+                for (const [cmd, info] of Object.entries(COMMAND_LIST)) {
+                    if (info.category === categoryId) {
+                        addOutput(`<div class="result"><span class="command">${cmd}</span> - ${info.desc}</div>`);
+                    }
+                }
+            }
+            
+            addOutput('<div class="result" style="margin-top: 10px;">Используйте <span class="command">Tab</span> для автодополнения команд.</div>');
+        }
+
+        // Обработка Python команд
+        function handlePythonCommand(command) {
+            if (command === 'exit()') {
+                addOutput('<div class="result">Выход из Python интерпретатора</div>');
+                CONFIG.pythonMode = false;
+            } else {
+                try {
+                    // Безопасное выполнение кода Python (эмуляция)
+                    const result = safePythonEval(command);
+                    addOutput(`<div class="result">${result}</div>`);
+                } catch (error) {
+                    addOutput(`<div class="error">Ошибка: ${error.message}</div>`);
+                }
             }
         }
-        
-        function showHelp() {
-            addOutput('<div class="result">Доступные команды:</div>');
-            addOutput('<div class="result"><span class="command">help</span> - показать эту справку</div>');
-            addOutput('<div class="result"><span class="command">clear</span> - очистить терминал</div>');
-            addOutput('<div class="result"><span class="command">sysinfo</span> - информация о системе</div>');
-            addOutput('<div class="result"><span class="command">secure</span> - тест безопасности</div>');
-            addOutput('<div class="result"><span class="command">python</span> - запуск Python интерпретатора</div>');
-            addOutput('<div class="result"><span class="command">scan [ip]</span> - сканирование сети</div>');
-            addOutput('<div class="result"><span class="command">connect [host]</span> - подключение к хосту</div>');
-            addOutput('<div class="result"><span class="command">hack [target]</span> - взлом системы</div>');
-            addOutput('<div class="result"><span class="command">decrypt [file]</span> - дешифрование файла</div>');
-            addOutput('<div class="result"><span class="command">encrypt [file]</span> - шифрование файла</div>');
-            addOutput('<div class="result"><span class="command">bf [target]</span> - брутфорс атака</div>');
-            addOutput('<div class="result"><span class="command">download [file]</span> - загрузка файла</div>');
-            addOutput('<div class="result"><span class="command">upload [file]</span> - выгрузка файла</div>');
-            addOutput('<div class="result"><span class="command">history</span> - история команд</div>');
-            addOutput('<div class="result"><span class="command">whoami</span> - информация о пользователе</div>');
-            addOutput('<div class="result"><span class="command">pwd</span> - текущая директория</div>');
-            addOutput('<div class="result"><span class="command">ls/dir</span> - список файлов</div>');
-            addOutput('<div class="result"><span class="command">cd [dir]</span> - сменить директорию</div>');
-            addOutput('<div class="result"><span class="command">cat/type [file]</span> - просмотр файла</div>');
-            addOutput('<div class="result"><span class="command">rm/del [file]</span> - удалить файл</div>');
-            addOutput('<div class="result"><span class="command">mkdir [dir]</span> - создать директорию</div>');
-            addOutput('<div class="result"><span class="command">ping [host]</span> - пинг хоста</div>');
-            addOutput('<div class="result"><span class="command">tracert [host]</span> - трассировка маршрута</div>');
-            addOutput('<div class="result"><span class="command">geoip [ip]</span> - геолокация IP</div>');
-            addOutput('<div class="result"><span class="command">crypto</span> - информация о криптосистеме</div>');
-            addOutput('<div class="result"><span class="command">proxy</span> - включить/выключить прокси</div>');
-            addOutput('<div class="result"><span class="command">ports</span> - показать открытые порты</div>');
-            addOutput('<div class="result"><span class="command">services</span> - список сервисов</div>');
-            addOutput('<div class="result"><span class="command">reboot</span> - перезагрузка системы</div>');
-            addOutput('<div class="result"><span class="command">shutdown</span> - выключение системы</div>');
-            addOutput('<div class="result"><span class="command">alias [name] [command]</span> - создать псевдоним</div>');
-            addOutput('<div class="result"><span class="command">unlock [feature]</span> - разблокировать функцию</div>');
-            addOutput('<div class="result"><span class="command">encode [method] [data]</span> - кодировать данные</div>');
-            addOutput('<div class="result"><span class="command">decode [method] [data]</span> - декодировать данные</div>');
-            addOutput('<div class="result"><span class="command">backdoor [target]</span> - установить бэкдор</div>');
-            addOutput('<div class="result"><span class="command">keylog</span> - включить/выключить кейлоггер</div>');
-            addOutput('<div class="result"><span class="command">worm [target]</span> - запустить червя</div>');
-            addOutput('<div class="result"><span class="command">trojan [target]</span> - запустить троян</div>');
-            addOutput('<div class="result"><span class="command">ransomware [target]</span> - запустить ransomware</div>');
-            addOutput('<div class="result"><span class="command">bitcoin</span> - майнить биткоины</div>');
-            addOutput('<div class="result"><span class="command">ddos [target]</span> - DDoS атака</div>');
-            addOutput('<div class="result"><span class="command">vpn</span> - включить/выключить VPN</div>');
-            addOutput('<div class="result"><span class="command">stealth</span> - режим невидимки</div>');
-            addOutput('<div class="result"><span class="command">password [hash]</span> - взломать пароль</div>');
-            addOutput('<div class="result"><span class="command">sql [url]</span> - SQL инъекция</div>');
-            addOutput('<div class="result"><span class="command">xss [url]</span> - XSS тест</div>');
-            addOutput('<div class="result"><span class="command">phishing [target]</span> - фишинг атака</div>');
-            addOutput('<div class="result"><span class="command">bypass [security]</span> - обход защиты</div>');
-            addOutput('<div class="result"><span class="command">root</span> - получить root доступ</div>');
-            addOutput('<div class="result"><span class="command">mask</span> - маскировка личности</div>');
-            addOutput('<div class="result"><span class="command">track [user]</span> - отслеживание пользователя</div>');
-            addOutput('<div class="result"><span class="command">intercept</span> - перехват трафика</div>');
-            addOutput('<div class="result"><span class="command">spoof [ip]</span> - подмена IP</div>');
-            addOutput('<div class="result"><span class="command">analyze [file]</span> - анализ кода</div>');
-            addOutput('<div class="result"><span class="command">exploit [vuln]</span> - использовать уязвимость</div>');
-            addOutput('<div class="result"><span class="command">reverse [ip]</span> - обратная оболочка</div>');
-            addOutput('<div class="result"><span class="command">botnet [command]</span> - управление ботнетом</div>');
-            addOutput('<div class="result"><span class="command">zero [target]</span> - использовать zero-day уязвимость</div>');
-            addOutput('<div class="result"><span class="command">journal</span> - показать логи</div>');
-            addOutput('<div class="result"><span class="command">encryptfs</span> - шифрование файловой системы</div>');
-            addOutput('<div class="result"><span class="command">decryptfs</span> - дешифрование файловой системы</div>');
-            addOutput('<div class="result"><span class="command">firewall [action]</span> - управление фаерволом</div>');
-            addOutput('<div class="result"><span class="command">format [drive]</span> - форматирование диска</div>');
-            addOutput('<div class="result"><span class="command">ghost</span> - режим призрака</div>');
-            addOutput('<div class="result"><span class="command">satellite [id]</span> - доступ к спутнику</div>');
-            addOutput('<div class="result"><span class="command">nuclear</span> - доступ к ядерным кодам</div>');
-            addOutput('<div class="result"><span class="command">time</span> - текущее время</div>');
-            addOutput('<div class="result"><span class="command">date</span> - текущая дата</div>');
-            addOutput('<div class="result"><span class="command">weather [city]</span> - прогноз погоды</div>');
-            addOutput('<div class="result"><span class="command">calc [expression]</span> - калькулятор</div>');
-            addOutput('<div class="result"><span class="command">matrix</span> - режим матрицы</div>');
-            addOutput('<div class="result"><span class="command">game</span> - запустить игру</div>');
-            addOutput('<div class="result"><span class="command">music</span> - включить музыку</div>');
-            addOutput('<div class="result"><span class="command">joke</span> - случайная шутка</div>');
-            addOutput('<div class="result"><span class="command">quote</span> - случайная цитата</div>');
-            addOutput('<div class="result"><span class="command">hint</span> - показать подсказку</div>');
-            addOutput('<div class="result"><span class="command">bonus</span> - бонусная функция</div>');
-            addOutput('<div class="result"><span class="command">secret</span> - секретная команда</div>');
-            addOutput('<div class="result"><span class="command">easteregg</span> - пасхальное яйцо</div>');
-            addOutput('<div class="result"><span class="command">exit</span> - выход из системы</div>');
+
+        // Безопасная эмуляция Python
+        function safePythonEval(code) {
+            // Ограниченная эмуляция Python для безопасности
+            if (code.includes('import') || code.includes('eval') || code.includes('exec') || 
+                code.includes('open') || code.includes('os.') || code.includes('sys.') ||
+                code.includes('subprocess') || code.includes('__')) {
+                throw new Error('Недопустимая операция');
+            }
+            
+            // Простые математические операции
+            if (/^[\d\s+\-*/().]+$/.test(code)) {
+                try {
+                    return eval(code);
+                } catch (e) {
+                    throw new Error('Синтаксическая ошибка');
+                }
+            }
+            
+            // Простые операции со строками
+            if (code.startsWith('print(') && code.endsWith(')')) {
+                const content = code.substring(6, code.length - 1);
+                return content.replace(/['"]/g, '');
+            }
+            
+            // Переменные
+            if (/^[a-zA-Z_][a-zA-Z0-9_]*\s*=/.test(code)) {
+                return 'Переменная установлена';
+            }
+            
+            // Простые условия
+            if (code.includes('if') || code.includes('for') || code.includes('while')) {
+                return 'Условные конструкции выполнены';
+            }
+            
+            throw new Error('Неподдерживаемая операция в демо-режиме');
         }
-        
+
+        // Система достижений
+        function unlockAchievement(id, description) {
+            if (CONFIG.achievements[id]) return;
+            
+            CONFIG.achievements[id] = {
+                description: description,
+                unlocked: new Date().toLocaleString()
+            };
+            
+            // Показываем уведомление
+            const notification = document.getElementById('achievement-notification');
+            document.getElementById('achievement-desc').textContent = description;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+            
+            // Обновляем счетчик
+            updateAchievementCounter();
+            
+            // Сохраняем состояние
+            saveSystemState();
+            
+            // Проверяем достижения, связанные с количеством достижений
+            checkAchievementCount();
+        }
+
+        // Проверка достижений, связанных с использованием команд
+        function checkCommandAchievements(cmd) {
+            // Достижение за использование 10 различных команд
+            const uniqueCommands = Object.keys(CONFIG.commandsUsed).length;
+            if (uniqueCommands >= 10 && !CONFIG.achievements.ten_commands) {
+                unlockAchievement('ten_commands', 'Использовано 10 различных команд');
+            }
+            
+            // Достижение за использование 25 различных команд
+            if (uniqueCommands >= 25 && !CONFIG.achievements.twenty_five_commands) {
+                unlockAchievement('twenty_five_commands', 'Использовано 25 различных команд');
+            }
+            
+            // Достижение за использование конкретных команд
+            if (cmd === 'nuclear' && !CONFIG.achievements.nuclear_access) {
+                unlockAchievement('nuclear_access', 'Получен доступ к ядерным кодам');
+            }
+            
+            if (cmd === 'hack' && !CONFIG.achievements.first_hack) {
+                unlockAchievement('first_hack', 'Первый успешный взлом');
+            }
+        }
+
+        // Проверка достижений, связанных с количеством достижений
+        function checkAchievementCount() {
+            const achievementCount = Object.keys(CONFIG.achievements).length;
+            
+            if (achievementCount >= 5 && !CONFIG.achievements.five_achievements) {
+                unlockAchievement('five_achievements', 'Получено 5 достижений');
+            }
+            
+            if (achievementCount >= 10 && !CONFIG.achievements.ten_achievements) {
+                unlockAchievement('ten_achievements', 'Получено 10 достижений');
+            }
+        }
+
+        // Обновление счетчика достижений
+        function updateAchievementCounter() {
+            const achievementCount = Object.keys(CONFIG.achievements).length;
+            document.getElementById('achievement-count').textContent = achievementCount;
+        }
+
+        // Проверка всех достижений
+        function checkAchievements() {
+            // Проверяем достижение за первый вход
+            const session = localStorage.getItem('terminal_session');
+            if (session && !CONFIG.achievements.first_login) {
+                try {
+                    const sessionData = JSON.parse(session);
+                    if (sessionData.loggedIn) {
+                        CONFIG.achievements.first_login = {
+                            description: 'Первый вход в систему',
+                            unlocked: new Date(sessionData.timestamp).toLocaleString()
+                        };
+                        updateAchievementCounter();
+                    }
+                } catch (e) {
+                    console.error('Ошибка проверки достижений:', e);
+                }
+            }
+        }
+
+        // Функции для работы с файловой системой
+        function resolvePath(path) {
+            if (!path) return CONFIG.currentDir;
+            
+            if (path.startsWith('/')) {
+                return path;
+            } else {
+                return CONFIG.currentDir + '/' + path;
+            }
+        }
+
+        function pathExists(path) {
+            return !!CONFIG.fileSystem[path];
+        }
+
+        function isDirectory(path) {
+            return CONFIG.fileSystem[path] && CONFIG.fileSystem[path].type === 'dir';
+        }
+
+        function isFile(path) {
+            return CONFIG.fileSystem[path] && CONFIG.fileSystem[path].type === 'file';
+        }
+
+        function getParentDirectory(path) {
+            const lastSlash = path.lastIndexOf('/');
+            if (lastSlash === 0) return '/';
+            return path.substring(0, lastSlash);
+        }
+
+        // Реализация команд
         function showSystemInfo() {
             addOutput('<div class="result">Система: SAITO OS v2.4.1</div>');
             addOutput('<div class="result">Ядро: 5.12.7-saito-secure</div>');
@@ -755,7 +1282,7 @@
             if (!ip) ip = '192.168.1.0/24';
             addOutput(`<div class="result">Сканирование сети ${ip}...</div>`);
             
-            scanProgress = 0;
+            let scanProgress = 0;
             const scanInterval = setInterval(() => {
                 scanProgress += Math.floor(Math.random() * 10);
                 if (scanProgress >= 100) {
@@ -798,7 +1325,7 @@
             
             addOutput(`<div class="result">Начало взлома ${target}...</div>`);
             
-            hackProgress = 0;
+            let hackProgress = 0;
             const hackInterval = setInterval(() => {
                 hackProgress += Math.floor(Math.random() * 8);
                 if (hackProgress >= 100) {
@@ -807,6 +1334,11 @@
                     addOutput('<div class="result">Получен root доступ к системе</div>');
                     addOutput('<div class="result">Установлен бэкдор на порту 443</div>');
                     addOutput('<div class="result">Все пароли скомпрометированы</div>');
+                    
+                    // Разблокируем достижение
+                    if (!CONFIG.achievements.first_hack) {
+                        unlockAchievement('first_hack', 'Первый успешный взлом');
+                    }
                 } else {
                     addOutput(`<div class="result">Прогресс взлома: ${hackProgress}%</div>`);
                     
@@ -829,7 +1361,7 @@
             
             addOutput(`<div class="result">Дешифрование ${file}...</div>`);
             
-            decryptionProgress = 0;
+            let decryptionProgress = 0;
             const decryptInterval = setInterval(() => {
                 decryptionProgress += Math.floor(Math.random() * 15);
                 if (decryptionProgress >= 100) {
@@ -870,6 +1402,7 @@
             }, 500);
         }
         
+        // ИСПРАВЛЕННАЯ КОМАНДА: SQL инъекция
         function sqlInjection(url) {
             if (!url) {
                 addOutput('<div class="error">Укажите URL для SQL инъекции</div>');
@@ -878,136 +1411,166 @@
             
             addOutput(`<div class="result">Попытка SQL инъекции на ${url}...</div>`);
             
+            // Показываем процесс инъекции
+            setTimeout(() => addOutput('<div class="result">Поиск уязвимых форм...</div>'), 500);
+            setTimeout(() => addOutput('<div class="result">Обнаружена форма входа...</div>'), 1000);
+            setTimeout(() => addOutput('<div class="result">Тестирование параметров: username...</div>'), 1500);
+            setTimeout(() => addOutput('<div class="result">Тестирование параметров: password...</div>'), 2000);
+            setTimeout(() => addOutput('<div class="result">Найдена уязвимость: SQLi в параметре username...</div>'), 2500);
+            
             setTimeout(() => {
-                if (Math.random() > 0.5) {
+                if (Math.random() > 0.3) {
                     addOutput('<div class="result">Уязвимость найдена! Успешная инъекция.</div>');
                     addOutput('<div class="result">Получены данные из базы данных:</div>');
                     addOutput('<div class="result">- users: 152 записи</div>');
                     addOutput('<div class="result">- passwords: 152 хеша</div>');
                     addOutput('<div class="result">- transactions: 2047 записей</div>');
+                    addOutput('<div class="result">- credit_cards: 89 записей</div>');
+                    
+                    // Показываем пример данных
+                    addOutput('<div class="result">Пример данных:</div>');
+                    addOutput('<div class="result">admin | 5f4dcc3b5aa765d61d8327deb882cf99 (password)</div>');
+                    addOutput('<div class="result">user1 | 7c6a180b36896a0a8c02787eeafb0e4c (password1)</div>');
                 } else {
                     addOutput('<div class="error">SQL инъекция не удалась. Сайт защищен.</div>');
+                    addOutput('<div class="result">Возможные причины: WAF, подготовленные операторы, фильтрация входных данных</div>');
                 }
             }, 3000);
         }
         
+        // ИСПРАВЛЕННАЯ КОМАНДА: Кейлоггер
         function toggleKeylogger() {
-            addOutput('<div class="result">Переключение кейлоггера...</div>');
-            setTimeout(() => {
-                addOutput('<div class="result">Кейлоггер активирован и скрыт в системе.</div>');
-                addOutput('<div class="result">Логи будут сохранены в /var/log/keys.log</div>');
-            }, 1500);
+            CONFIG.keyloggerActive = !CONFIG.keyloggerActive;
+            
+            if (CONFIG.keyloggerActive) {
+                addOutput('<div class="result">Активация кейлоггера...</div>');
+                setTimeout(() => {
+                    addOutput('<div class="result">Кейлоггер активирован и скрыт в системе.</div>');
+                    addOutput('<div class="result">Логи будут сохранены в /var/log/keys.log</div>');
+                    addOutput('<div class="result">Режим: Стелс (не обнаруживается антивирусами)</div>');
+                    
+                    // Разблокируем достижение
+                    if (!CONFIG.achievements.keylogger) {
+                        unlockAchievement('keylogger', 'Активация кейлоггера');
+                    }
+                }, 1500);
+            } else {
+                addOutput('<div class="result">Деактивация кейлоггера...</div>');
+                setTimeout(() => {
+                    addOutput('<div class="result">Кейлоггер деактивирован.</div>');
+                    addOutput('<div class="result">Все логи удалены для сохранения анонимности.</div>');
+                }, 1500);
+            }
+            
+            // Сохраняем состояние
+            saveSystemState();
         }
         
+        // ИСПРАВЛЕННАЯ КОМАНДА: Геолокация IP
         function geoLocateIP(ip) {
             if (!ip) {
                 addOutput('<div class="error">Укажите IP для геолокации</div>');
                 return;
             }
             
+            // Проверяем формат IP-адреса
+            const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (!ipPattern.test(ip)) {
+                addOutput(`<div class="error">Неверный формат IP-адреса: ${ip}</div>`);
+                addOutput('<div class="result">Пример правильного формата: 192.168.1.1</div>');
+                return;
+            }
+            
             addOutput(`<div class="result">Геолокация IP: ${ip}...</div>`);
             
+            // Проверяем каждую часть IP-адреса
+            const parts = ip.split('.');
+            let isValid = true;
+            for (const part of parts) {
+                const num = parseInt(part, 10);
+                if (isNaN(num) || num < 0 || num > 255) {
+                    isValid = false;
+                    break;
+                }
+            }
+            
             setTimeout(() => {
-                addOutput('<div class="result">Результаты геолокации:</div>');
-                addOutput('<div class="result">- Страна: Россия</div>');
-                addOutput('<div class="result">- Город: Москва</div>');
-                addOutput('<div class="result">- Провайдер: Ростелеком</div>');
-                addOutput('<div class="result">- Координаты: 55.7558° N, 37.6173° E</div>');
+                if (isValid) {
+                    addOutput('<div class="result">Результаты геолокации:</div>');
+                    
+                    // Случайные, но правдоподобные данные
+                    const countries = ['Россия', 'США', 'Китай', 'Германия', 'Бразилия', 'Индия', 'Япония'];
+                    const cities = {
+                        'Россия': ['Москва', 'Санкт-Петербург', 'Новосибирск', 'Екатеринбург'],
+                        'США': ['Нью-Йорк', 'Лос-Анджелес', 'Чикаго', 'Маями'],
+                        'Китай': ['Пекин', 'Шанхай', 'Гуанчжоу', 'Шэньчжэнь'],
+                        'Германия': ['Берлин', 'Гамбург', 'Мюнхен', 'Кёльн'],
+                        'Бразилия': ['Сан-Паулу', 'Рио-де-Жанейро', 'Бразилиа', 'Салвадор'],
+                        'Индия': ['Мумбаи', 'Дели', 'Бангалор', 'Калькутта'],
+                        'Япония': ['Токио', 'Осака', 'Киото', 'Иокогама']
+                    };
+                    
+                    const providers = ['Ростелеком', 'Comcast', 'China Telecom', 'Deutsche Telekom', 'Embratel', 'Jio', 'NTT'];
+                    
+                    const country = countries[Math.floor(Math.random() * countries.length)];
+                    const city = cities[country][Math.floor(Math.random() * cities[country].length)];
+                    const provider = providers[Math.floor(Math.random() * providers.length)];
+                    
+                    addOutput(`<div class="result">- Страна: ${country}</div>`);
+                    addOutput(`<div class="result">- Город: ${city}</div>`);
+                    addOutput(`<div class="result">- Провайдер: ${provider}</div>`);
+                    addOutput(`<div class="result">- Координаты: ${(Math.random() * 180 - 90).toFixed(4)}° N, ${(Math.random() * 360 - 180).toFixed(4)}° E</div>`);
+                    
+                    // Разблокируем достижение
+                    if (!CONFIG.achievements.geoip) {
+                        unlockAchievement('geoip', 'Геолокация IP-адреса');
+                    }
+                } else {
+                    addOutput(`<div class="error">Неверный IP-адрес: ${ip}</div>`);
+                    addOutput('<div class="result">Каждая часть IP-адреса должна быть в диапазоне 0-255</div>');
+                }
             }, 2000);
         }
         
+        // ИСПРАВЛЕННАЯ КОМАНДА: Ping
         function pingHost(host) {
             if (!host) {
                 addOutput('<div class="error">Укажите хост для ping</div>');
                 return;
             }
             
-            addOutput(`<div class="result">Ping ${host}...</div>`);
+            addOutput(`<div class="result">Ping ${host} [192.168.1.1] с 32 байтами данных:</div>`);
             
+            // Эмуляция ping с случайными значениями
             setTimeout(() => {
-                addOutput('<div class="result">64 bytes from 192.168.1.1: icmp_seq=0 ttl=64 time=1.123 ms</div>');
-                addOutput('<div class="result">64 bytes from 192.168.1.1: icmp_seq=1 ttl=64 time=0.987 ms</div>');
-                addOutput('<div class="result">64 bytes from 192.168.1.1: icmp_seq=2 ttl=64 time=1.045 ms</div>');
-                addOutput('<div class="result">64 bytes from 192.168.1.1: icmp_seq=3 ttl=64 time=1.201 ms</div>');
-                addOutput('<div class="result">--- ping statistics ---</div>');
-                addOutput('<div class="result">4 packets transmitted, 4 received, 0% packet loss</div>');
+                const packets = Math.floor(Math.random() * 4) + 1; // 1-4 пакета
+                let received = 0;
+                let totalTime = 0;
+                
+                for (let i = 0; i < packets; i++) {
+                    const time = (Math.random() * 10 + 1).toFixed(2);
+                    const lost = Math.random() > 0.8; // 20% вероятность потери пакета
+                    
+                    if (!lost) {
+                        received++;
+                        totalTime += parseFloat(time);
+                        addOutput(`<div class="result">Ответ от 192.168.1.1: число байт=32 время=${time}мс TTL=64</div>`);
+                    } else {
+                        addOutput(`<div class="result">Превышен интервал ожидания для запроса.</div>`);
+                    }
+                }
+                
+                addOutput('<div class="result">Статистика Ping для 192.168.1.1:</div>');
+                addOutput(`<div class="result">    Пакетов: отправлено = ${packets}, получено = ${received}, потеряно = ${packets - received}</div>`);
+                addOutput(`<div class="result">    (${Math.round((packets - received) / packets * 100)}% потерь)</div>`);
+                
+                if (received > 0) {
+                    addOutput(`<div class="result">Приблизительное время приема-передачи в мс:</div>`);
+                    addOutput(`<div class="result">    Minimum = ${(totalTime/received - Math.random()*2).toFixed(2)}мс, Maximum = ${(totalTime/received + Math.random()*5).toFixed(2)}мс, Average = ${(totalTime/received).toFixed(2)}мс</div>`);
+                }
             }, 1000);
         }
         
-        // Безопасная эмуляция Python
-        function safePythonEval(code) {
-            // Ограниченная эмуляция Python для безопасности
-            if (code.includes('import') || code.includes('eval') || code.includes('exec') || 
-                code.includes('open') || code.includes('os.') || code.includes('sys.') ||
-                code.includes('subprocess') || code.includes('__')) {
-                throw new Error('Недопустимая операция');
-            }
-            
-            // Простые математические операции
-            if (/^[\d\s+\-*/().]+$/.test(code)) {
-                try {
-                    return eval(code);
-                } catch (e) {
-                    throw new Error('Синтаксическая ошибка');
-                }
-            }
-            
-            // Простые операции со строками
-            if (code.startsWith('print(') && code.endsWith(')')) {
-                const content = code.substring(6, code.length - 1);
-                return content.replace(/['"]/g, '');
-            }
-            
-            // Переменные
-            if (/^[a-zA-Z_][a-zA-Z0-9_]*\s*=/.test(code)) {
-                return 'Переменная установлена';
-            }
-            
-            // Простые условия
-            if (code.includes('if') || code.includes('for') || code.includes('while')) {
-                return 'Условные конструкции выполнены';
-            }
-            
-            throw new Error('Неподдерживаемая операция в демо-режиме');
-        }
-        
-        // Защита от инспектирования кода
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'U')) {
-                e.preventDefault();
-                addOutput('<div class="error">ОШИБКА БЕЗОПАСНОСТИ: Попытка инспектирования кода</div>');
-                
-                // Создаем ложную ошибку для запутывания
-                setTimeout(() => {
-                    const fakeError = document.createElement('div');
-                    fakeError.style.position = 'fixed';
-                    fakeError.style.top = '0';
-                    fakeError.style.left = '0';
-                    fakeError.style.width = '100%';
-                    fakeError.style.height = '100%';
-                    fakeError.style.background = 'blue';
-                    fakeError.style.color = 'white';
-                    fakeError.style.fontSize = '24px';
-                    fakeError.style.display = 'flex';
-                    fakeError.style.justifyContent = 'center';
-                    fakeError.style.alignItems = 'center';
-                    fakeError.style.zIndex = '1000';
-                    fakeError.textContent = 'КРИТИЧЕСКИЙ СБОЙ СИСТЕМЫ';
-                    document.body.appendChild(fakeError);
-                    
-                    setTimeout(() => {
-                        document.body.removeChild(fakeError);
-                    }, 1000);
-                }, 100);
-            }
-        });
-        
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-            addOutput('<div class="error">ОШИБКА БЕЗОПАСНОСТИ: Попытка доступа к контекстному меню</div>');
-        });
-        
-        // Дополнительные функции для команд
         function encryptFile(file) {
             if (!file) {
                 addOutput('<div class="error">Укажите файл для шифрования</div>');
@@ -1046,10 +1609,10 @@
         
         function showHistory() {
             addOutput('<div class="result">История команд:</div>');
-            if (commandHistory.length === 0) {
+            if (!CONFIG.commandHistory || CONFIG.commandHistory.length === 0) {
                 addOutput('<div class="result">История команд пуста.</div>');
             } else {
-                commandHistory.forEach((cmd, index) => {
+                CONFIG.commandHistory.forEach((cmd, index) => {
                     addOutput(`<div class="result">${index + 1}. ${cmd}</div>`);
                 });
             }
@@ -1064,15 +1627,27 @@
         }
         
         function showCurrentDirectory() {
-            addOutput(`<div class="result">Текущая директория: ${currentDir}</div>`);
+            addOutput(`<div class="result">Текущая директория: ${CONFIG.currentDir}</div>`);
         }
         
         function listFiles() {
-            addOutput('<div class="result">Содержимое директории:</div>');
-            addOutput('<div class="result">drwxr-xr-x   root root  4096 Dec 10 14:30 documents</div>');
-            addOutput('<div class="result">drwxr-xr-x   root root  4096 Dec 10 14:31 downloads</div>');
-            addOutput('<div class="result">-rw-r--r--   root root  1024 Dec 10 14:25 secret.txt</div>');
-            addOutput('<div class="result">-rwxr-xr-x   root root  2048 Dec 10 14:20 hacktool.py</div>');
+            const path = CONFIG.currentDir;
+            
+            if (!pathExists(path) || !isDirectory(path)) {
+                addOutput(`<div class="error">Директория не существует: ${path}</div>`);
+                return;
+            }
+            
+            addOutput(`<div class="result">Содержимое директории ${path}:</div>`);
+            
+            const contents = CONFIG.fileSystem[path].content;
+            for (const [name, info] of Object.entries(contents)) {
+                if (info.type === 'dir') {
+                    addOutput(`<div class="result">drwxr-xr-x   root root  4096 Dec 10 14:30 ${name}/</div>`);
+                } else {
+                    addOutput(`<div class="result">-rw-r--r--   root root  ${info.content.length} Dec 10 14:25 ${name}</div>`);
+                }
+            }
         }
         
         function changeDirectory(dir) {
@@ -1081,16 +1656,31 @@
                 return;
             }
             
+            let newPath;
             if (dir === '..') {
-                currentDir = currentDir.substring(0, currentDir.lastIndexOf('/'));
-                if (currentDir === '') currentDir = '/';
+                newPath = getParentDirectory(CONFIG.currentDir);
             } else if (dir.startsWith('/')) {
-                currentDir = dir;
+                newPath = dir;
             } else {
-                currentDir += '/' + dir;
+                newPath = CONFIG.currentDir + '/' + dir;
             }
             
-            addOutput(`<div class="result">Текущая директория изменена на: ${currentDir}</div>`);
+            // Нормализуем путь (убираем двойные слеши и т.д.)
+            newPath = newPath.replace(/\/+/g, '/');
+            if (newPath.endsWith('/') && newPath !== '/') {
+                newPath = newPath.slice(0, -1);
+            }
+            
+            if (!pathExists(newPath) || !isDirectory(newPath)) {
+                addOutput(`<div class="error">Директория не существует: ${newPath}</div>`);
+                return;
+            }
+            
+            CONFIG.currentDir = newPath;
+            addOutput(`<div class="result">Текущая директория изменена на: ${CONFIG.currentDir}</div>`);
+            
+            // Сохраняем состояние
+            saveSystemState();
         }
         
         function showFileContent(file) {
@@ -1099,15 +1689,15 @@
                 return;
             }
             
-            addOutput(`<div class="result">Содержимое файла ${file}:</div>`);
+            const filePath = resolvePath(file);
             
-            if (file === 'secret.txt') {
-                addOutput('<div class="result">Это секретный файл с важной информацией.</div>');
-                addOutput('<div class="result">Миссия: проникнуть в главный сервер и получить данные.</div>');
-                addOutput('<div class="result">Код доступа: 7X9A-2B4C-8D3E-1F5G</div>');
-            } else {
-                addOutput('<div class="result">Содержимое файла недоступно для чтения.</div>');
+            if (!pathExists(filePath) || !isFile(filePath)) {
+                addOutput(`<div class="error">Файл не существует: ${filePath}</div>`);
+                return;
             }
+            
+            addOutput(`<div class="result">Содержимое файла ${filePath}:</div>`);
+            addOutput(`<div class="result">${CONFIG.fileSystem[filePath].content}</div>`);
         }
         
         function deleteFile(file) {
@@ -1161,11 +1751,44 @@
         }
         
         function toggleProxy() {
-            addOutput('<div class="result">Переключение прокси-сервера...</div>');
-            setTimeout(() => {
-                addOutput('<div class="result">Прокси-сервер активирован: 194.135.92.74:8080</div>');
-                addOutput('<div class="result">Анонимность: ВЫСОКАЯ</div>');
-            }, 1500);
+            CONFIG.proxyActive = !CONFIG.proxyActive;
+            
+            if (CONFIG.proxyActive) {
+                addOutput('<div class="result">Активация прокси-сервера...</div>');
+                setTimeout(() => {
+                    addOutput('<div class="result">Прокси-сервер активирован: 194.135.92.74:8080</div>');
+                    addOutput('<div class="result">Анонимность: ВЫСОКАЯ</div>');
+                }, 1500);
+            } else {
+                addOutput('<div class="result">Деактивация прокси-сервера...</div>');
+                setTimeout(() => {
+                    addOutput('<div class="result">Прокси-сервер деактивирован.</div>');
+                }, 1500);
+            }
+            
+            // Сохраняем состояние
+            saveSystemState();
+        }
+        
+        function toggleVPN() {
+            CONFIG.vpnActive = !CONFIG.vpnActive;
+            
+            if (CONFIG.vpnActive) {
+                addOutput('<div class="result">Активация VPN...</div>');
+                setTimeout(() => {
+                    addOutput('<div class="result">VPN активирован: Швейцария (194.135.92.74)</div>');
+                    addOutput('<div class="result">Анонимность: МАКСИМАЛЬНАЯ</div>');
+                    addOutput('<div class="result">Шифрование: AES-256</div>');
+                }, 1500);
+            } else {
+                addOutput('<div class="result">Деактивация VPN...</div>');
+                setTimeout(() => {
+                    addOutput('<div class="result">VPN деактивирован.</div>');
+                }, 1500);
+            }
+            
+            // Сохраняем состояние
+            saveSystemState();
         }
         
         function showOpenPorts() {
@@ -1189,7 +1812,7 @@
             setTimeout(() => {
                 addOutput('<div class="result">Система будет перезагружена через 5 секунд...</div>');
                 setTimeout(() => {
-                    terminalOutput.innerHTML = `
+                    document.getElementById('terminal-output').innerHTML = `
                         <div class="output">Инициализация системы... <span class="result">УСПЕХ</span></div>
                         <div class="output">Загрузка защищенных модулей... <span class="result">УСПЕХ</span></div>
                         <div class="output">Подключение к главному серверу... <span class="result">УСПЕХ</span></div>
@@ -1206,20 +1829,247 @@
                 setTimeout(() => {
                     document.getElementById('login-screen').style.display = 'flex';
                     document.getElementById('terminal').style.display = 'none';
-                    terminalOutput.innerHTML = `
+                    document.getElementById('terminal-output').innerHTML = `
                         <div class="output">Инициализация системы... <span class="result">УСПЕХ</span></div>
                         <div class="output">Загрузка защищенных модулей... <span class="result">УСПЕХ</span></div>
                         <div class="output">Подключение к главному серверу... <span class="result">УСПЕХ</span></div>
                         <div class="output">Введите '<span class="command">help</span>' для списка команд</div>
                     `;
+                    localStorage.removeItem('terminal_session');
                 }, 5000);
             }, 1000);
         }
+
+        // Защита от инспектирования кода
+        function handleSecurityKeys(e) {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'U') || (e.ctrlKey && e.shiftKey && e.key === 'C')) {
+                e.preventDefault();
+                addOutput('<div class="error">ОШИБКА БЕЗОПАСНОСТИ: Попытка инспектирования кода</div>');
+                
+                // Создаем ложную ошибку для запутывания
+                setTimeout(() => {
+                    const fakeError = document.createElement('div');
+                    fakeError.style.position = 'fixed';
+                    fakeError.style.top = '0';
+                    fakeError.style.left = '0';
+                    fakeError.style.width = '100%';
+                    fakeError.style.height = '100%';
+                    fakeError.style.background = 'blue';
+                    fakeError.style.color = 'white';
+                    fakeError.style.fontSize = '24px';
+                    fakeError.style.display = 'flex';
+                    fakeError.style.justifyContent = 'center';
+                    fakeError.style.alignItems = 'center';
+                    fakeError.style.zIndex = '1000';
+                    fakeError.textContent = 'КРИТИЧЕСКИЙ СБОЙ СИСТЕМЫ';
+                    document.body.appendChild(fakeError);
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(fakeError);
+                    }, 1000);
+                }, 100);
+            }
+        }
         
-        // Инициализация
+        function handleContextMenu(e) {
+            e.preventDefault();
+            addOutput('<div class="error">ОШИБКА БЕЗОПАСНОСТИ: Попытка доступа к контекстному меню</div>');
+        }
+
+        // Анимация Matrix
+        function setupMatrixAnimation() {
+            const canvas = document.getElementById('matrix-bg');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const letters = '01010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101';
+            const fontSize = 12;
+            const columns = canvas.width / fontSize;
+            
+            const drops = [];
+            for (let i = 0; i < columns; i++) {
+                drops[i] = 1;
+            }
+            
+            let animationId = null;
+            let lastRenderTime = 0;
+            const renderInterval = 1000 / 30; // 30 FPS
+            
+            function drawMatrix(timestamp) {
+                if (!lastRenderTime) lastRenderTime = timestamp;
+                const deltaTime = timestamp - lastRenderTime;
+                
+                if (deltaTime > renderInterval) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    ctx.fillStyle = '#00ff00';
+                    ctx.font = `${fontSize}px monospace`;
+                    
+                    for (let i = 0; i < drops.length; i++) {
+                        const text = letters[Math.floor(Math.random() * letters.length)];
+                        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                        
+                        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                            drops[i] = 0;
+                        }
+                        
+                        drops[i]++;
+                    }
+                    
+                    lastRenderTime = timestamp;
+                }
+                
+                animationId = requestAnimationFrame(drawMatrix);
+            }
+            
+            // Запускаем анимацию
+            animationId = requestAnimationFrame(drawMatrix);
+            
+            // Останавливаем анимацию при скрытии вкладки
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    cancelAnimationFrame(animationId);
+                } else {
+                    animationId = requestAnimationFrame(drawMatrix);
+                }
+            });
+            
+            // Останавливаем анимацию при выходе из системы
+            const originalExit = COMMAND_LIST.exit.func;
+            COMMAND_LIST.exit.func = function() {
+                cancelAnimationFrame(animationId);
+                originalExit();
+            };
+        }
+
+        // Таймер сессии
+        function startSessionTimer() {
+            CONFIG.sessionTimer = setTimeout(() => {
+                addOutput('<div class="warning">Обнаружена неактивность. Сессия будет завершена через 60 секунд.</div>');
+                
+                CONFIG.inactivityWarning = setTimeout(() => {
+                    addOutput('<div class="error">Сессия завершена due to inactivity.</div>');
+                    document.getElementById('login-screen').style.display = 'flex';
+                    document.getElementById('terminal').style.display = 'none';
+                    localStorage.removeItem('terminal_session');
+                }, 60000);
+            }, CONFIG.sessionTimeout);
+        }
+        
+        function resetSessionTimer() {
+            clearTimeout(CONFIG.sessionTimer);
+            clearTimeout(CONFIG.inactivityWarning);
+            startSessionTimer();
+        }
+
+        // Вспомогательные функции
+        function addOutput(html) {
+            const terminalOutput = document.getElementById('terminal-output');
+            terminalOutput.innerHTML += html;
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+
+        // Инициализация системы при загрузке
         window.addEventListener('load', function() {
             document.getElementById('username').focus();
+            initSystem();
         });
+
+        // Заглушки для остальных команд (реализованы как пустышки)
+        function xssTest(url) { addOutput('<div class="result">XSS тест выполнен. Уязвимости не найдены.</div>'); }
+        function startPhishing(target) { addOutput(`<div class="result">Фишинг атака на ${target} запущена.</div>`); }
+        function bypassSecurity(security) { addOutput(`<div class="result">Обход защиты ${security} выполнен.</div>`); }
+        function exploitVulnerability(vuln) { addOutput(`<div class="result">Использование уязвимости ${vuln} выполнено.</div>`); }
+        function useZeroDay(target) { addOutput(`<div class="result">Zero-day уязвимость против ${target} активирована.</div>`); }
+        function crackPassword(hash) { addOutput(`<div class="result">Взлом пароля с хешем ${hash} выполнен.</div>`); }
+        function encodeData(method, data) { addOutput(`<div class="result">Данные закодированы методом ${method}.</div>`); }
+        function decodeData(method, data) { addOutput(`<div class="result">Данные декодированы методом ${method}.</div>`); }
+        function encryptFilesystem() { addOutput('<div class="result">Файловая система зашифрована.</div>'); }
+        function decryptFilesystem() { addOutput('<div class="result">Файловая система дешифрована.</div>'); }
+        function installBackdoor(target) { addOutput(`<div class="result">Бэкдор установлен на ${target}.</div>`); }
+        function trackUser(user) { addOutput(`<div class="result">Отслеживание пользователя ${user} начато.</div>`); }
+        function interceptTraffic() { addOutput('<div class="result">Перехват трафика активирован.</div>'); }
+        function spoofAddress(ip) { addOutput(`<div class="result">IP адрес подменен на ${ip}.</div>`); }
+        function deployWorm(target) { addOutput(`<div class="result">Червь развернут на ${target}.</div>`); }
+        function deployTrojan(target) { addOutput(`<div class="result">Троян развернут на ${target}.</div>`); }
+        function deployRansomware(target) { addOutput(`<div class="result">Ransomware развернуто на ${target}.</div>`); }
+        function reverseShell(ip) { addOutput(`<div class="result">Обратная оболочка установлена на ${ip}.</div>`); }
+        function controlBotnet(command) { addOutput(`<div class="result">Команда ботнету: ${command}.</div>`); }
+        function analyzeCode(file) { addOutput(`<div class="result">Анализ кода ${file} выполнен.</div>`); }
+        function formatDrive(drive) { addOutput(`<div class="result">Диск ${drive} отформатирован.</div>`); }
+        function createAlias(name, command) { addOutput(`<div class="result">Псевдоним ${name} создан для команды ${command}.</div>`); }
+        function unlockFeature(feature) { addOutput(`<div class="result">Функция ${feature} разблокирована.</div>`); }
+        function getRootAccess() { addOutput('<div class="result">Root доступ получен.</div>'); }
+        function maskIdentity() { addOutput('<div class="result">Личность замаскирована.</div>'); }
+        function enableStealthMode() { 
+            CONFIG.stealthMode = true;
+            addOutput('<div class="result">Режим невидимки активирован.</div>'); 
+            saveSystemState();
+        }
+        function showLogs() { addOutput('<div class="result">Системные логи показаны.</div>'); }
+        function ghostMode() { addOutput('<div class="result">Режим призрака активирован.</div>'); }
+        function startDDoS(target) { addOutput(`<div class="result">DDoS атака на ${target} начата.</div>`); }
+        function showTime() { addOutput(`<div class="result">Текущее время: ${new Date().toLocaleTimeString()}</div>`); }
+        function showDate() { addOutput(`<div class="result">Текущая дата: ${new Date().toLocaleDateString()}</div>`); }
+        function getWeather(city) { addOutput(`<div class="result">Погода в ${city}: ясно, +22°C.</div>`); }
+        function calculate(expression) { 
+            try {
+                const result = eval(expression);
+                addOutput(`<div class="result">${expression} = ${result}</div>`);
+            } catch {
+                addOutput('<div class="error">Ошибка вычисления выражения.</div>');
+            }
+        }
+        function mineBitcoin() { addOutput('<div class="result">Майнинг биткоинов запущен. Доход: 0.000001 BTC/час.</div>'); }
+        function accessSatellite(id) { 
+            addOutput(`<div class="result">Доступ к спутнику ${id || 'GSO-12'} получен.</div>`);
+            if (!CONFIG.achievements.satellite) {
+                unlockAchievement('satellite', 'Доступ к спутнику');
+            }
+        }
+        function accessNuclearCodes() { 
+            addOutput('<div class="result">Доступ к ядерным кодам получен. Коды: 7X9A-2B4C-8D3E-1F5G.</div>');
+            if (!CONFIG.achievements.nuclear) {
+                unlockAchievement('nuclear', 'Доступ к ядерным кодам');
+            }
+        }
+        function enableMatrixMode() { addOutput('<div class="result">Режим матрицы активирован.</div>'); }
+        function launchGame() { addOutput('<div class="result">Игра запущена. Удачи!</div>'); }
+        function playMusic() { addOutput('<div class="result">Музыка включена. Трек: Hacker Symphony.</div>'); }
+        function tellJoke() { 
+            const jokes = [
+                "Почему программисты путают Хэллоуин и Рождество? Потому что Oct 31 == Dec 25!",
+                "Какой пароль у хакера? *******. Посмотри, никто не видит!",
+                "Почему хакеры любят кофе? Потому что он помогает взламывать пароли!",
+                "Сколько хакеров нужно, чтобы взломать сайт? 127. Один подбирает пароль, остальные ждут."
+            ];
+            addOutput(`<div class="result">${jokes[Math.floor(Math.random() * jokes.length)]}</div>`);
+        }
+        function showQuote() { 
+            const quotes = [
+                "Свобода информации - право каждого человека.",
+                "В цифровом мире границы существуют только в головах людей.",
+                "Знание должно быть свободным.",
+                "Код - это поэзия, написанная логикой."
+            ];
+            addOutput(`<div class="result">${quotes[Math.floor(Math.random() * quotes.length)]}</div>`);
+        }
+        function showHint() { addOutput('<div class="result">Подсказка: попробуйте использовать команду "nuclear".</div>'); }
+        function showBonus() { addOutput('<div class="result">Бонусная функция активирована. Вы получили +10 к репутации.</div>'); }
+        function showSecret() { addOutput('<div class="result">Секретная команда выполнена. Система взломана... шучу!</div>'); }
+        function showEasterEgg() {
+            addOutput('<div class="result">Пасхальное яйцо найдено! Поздравляем!</div>');
+            addOutput('<div class="result">Вы обнаружили секретную функцию терминала.</div>');
+            addOutput('<div class="result">Ваша награда: виртуальное печенье с предсказанием.</div>');
+            addOutput('<div class="result">Предсказание: Скоро вас ждет большой успех в хакерском искусстве!</div>');
+            
+            if (!CONFIG.achievements.easter_egg) {
+                unlockAchievement('easter_egg', 'Найдено пасхальное яйцо');
+            }
+        }
     </script>
 </body>
 </html>
