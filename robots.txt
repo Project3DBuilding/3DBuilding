@@ -1,6 +1,0 @@
-User-agent: *
-Disallow: /security.html
-Disallow: /.github/
-Disallow: /security.js
-
-Sitemap: https://project3dbuilding.github.io/3DBuilding/index.html
