@@ -3,186 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вход в систему</title>
-    <!-- Подключаем CryptoJS для шифрования -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <!-- Подключаем нашу систему безопасности -->
-    <script src="security.js"></script>
+    <title>SAITO // Терминал доступа</title>
     <style>
-        /* Ваши стили */
-    </style>
-    <script>
-        // Проверка безопасности при загрузке
-        (function() {
-            // Проверка поддержки JavaScript
-            if (!window.JSON || !window.localStorage) {
-                document.body.innerHTML = '<h1 style="color:red;text-align:center;padding:50px;">Требуется поддержка JavaScript и современных веб-стандартов</h1>';
-                return;
-            }
-            
-            // Проверка на iframe (защита от clickjacking)
-            if (window.top !== window.self) {
-                window.top.location = window.self.location;
-                return;
-            }
-            
-            // Проверка на автоматизированные средства
-            if (navigator.webdriver || window.callPhantom || window._phantom) {
-                document.body.innerHTML = '<h1 style="color:red;text-align:center;padding:50px;">Доступ запрещен</h1>';
-                return;
-            }
-            
-            // Проверка HTTPS
-            if (location.protocol !== 'https:') {
-                console.warn('Для максимальной безопасности используйте HTTPS');
-            }
-        })();
-    </script>
-</head>
-<body>
-    <!-- Ваше содержимое -->
-</body>
-</html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вход в систему</title>
-    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+        
         body {
             background-color: #0a0a0a;
             color: #00ff00;
-            font-family: 'Courier New', monospace;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            line-height: 1.6;
+            overflow: hidden;
             height: 100vh;
-            overflow: hidden;
+            padding: 20px;
             position: relative;
         }
         
-        #matrix-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0.2;
-        }
-        
-        .login-container {
-            width: 400px;
-            padding: 30px;
-            border: 1px solid #00ff00;
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
-            background: rgba(10, 15, 10, 0.9);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .scan-line {
+        .login-screen {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 2px;
-            background: linear-gradient(to right, transparent, #00ff00, transparent);
-            animation: scan 3s linear infinite;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             z-index: 100;
         }
         
-        @keyframes scan {
-            0% { top: 0; }
-            100% { top: 100%; }
+        .login-form {
+            width: 400px;
+            padding: 20px;
+            border: 1px solid #00ff00;
+            background-color: #001100;
+            box-shadow: 0 0 15px #00ff00;
         }
         
-        .header {
+        .login-form h2 {
             text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        h1 {
-            font-size: 1.8em;
+            margin-bottom: 20px;
             text-transform: uppercase;
             letter-spacing: 3px;
-            text-shadow: 0 0 10px #00ff00;
-            margin-bottom: 10px;
-        }
-        
-        .subtitle {
-            color: #00cc00;
-            font-size: 1em;
-            margin-bottom: 30px;
-        }
-        
-        .login-form {
-            display: flex;
-            flex-direction: column;
         }
         
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         
-        label {
+        .form-group label {
             display: block;
-            margin-bottom: 8px;
-            font-size: 0.9em;
+            margin-bottom: 5px;
         }
         
-        input[type="text"],
-        input[type="password"] {
-            width: calc(100% - 20px);
+        .form-group input {
+            width: 100%;
             padding: 10px;
-            background: rgba(0, 10, 0, 0.7);
-            border: 1px solid #00aa00;
+            background-color: #000;
+            border: 1px solid #00ff00;
             color: #00ff00;
-            font-family: 'Courier New', monospace;
-        }
-        
-        input[type="text"]:focus,
-        input[type="password"]:focus {
             outline: none;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
         }
         
         .login-btn {
-            background: #002200;
+            width: 100%;
+            padding: 10px;
+            background-color: #003300;
             color: #00ff00;
-            border: 1px solid #00aa00;
-            padding: 12px;
+            border: 1px solid #00ff00;
             cursor: pointer;
-            font-family: 'Courier New', monospace;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
             transition: all 0.3s;
-            margin-top: 10px;
         }
         
         .login-btn:hover {
-            background: #003300;
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.7);
+            background-color: #00ff00;
+            color: #000;
         }
         
-        .status-message {
-            margin-top: 20px;
-            padding: 10px;
-            text-align: center;
-            font-size: 0.9em;
-            min-height: 20px;
-        }
-        
-        .access-denied {
+        .error-message {
             color: #ff0000;
-            text-shadow: 0 0 10px #ff0000;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
         }
         
-        .access-granted {
+        .terminal-container {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .terminal-header {
+            padding: 10px;
+            border-bottom: 1px solid #00ff00;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .terminal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .terminal-input {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .prompt {
             color: #00ff00;
-            text-shadow: 0 0 10px #00ff00;
+            margin-right: 10px;
+        }
+        
+        #command-input {
+            flex: 1;
+            background-color: transparent;
+            border: none;
+            color: #00ff00;
+            outline: none;
+            font-size: 16px;
+        }
+        
+        .output {
+            margin-bottom: 10px;
+        }
+        
+        .command {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        
+        .result {
+            color: #00cc00;
+        }
+        
+        .error {
+            color: #ff0000;
         }
         
         .blink {
@@ -195,57 +160,93 @@
             100% { opacity: 1; }
         }
         
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding: 10px;
-            border-top: 1px solid #00cc00;
-            font-size: 0.8em;
-            color: #009900;
+        .matrix-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+            pointer-events: none;
+        }
+        
+        .security-notice {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 12px;
+            color: #008800;
         }
     </style>
 </head>
 <body>
-    <canvas id="matrix-bg"></canvas>
-    
-    <div class="login-container">
-        <div class="scan-line"></div>
-        
-        <div class="header">
-            <h1>СИСТЕМА АУТЕНТИФИКАЦИИ</h1>
-            <div class="subtitle">ВЕРСИЯ 2.4.7 // ТРЕБУЕТСЯ ВХОД</div>
-        </div>
-        
+    <div class="login-screen" id="login-screen">
         <div class="login-form">
+            <h2>Доступ к системе</h2>
             <div class="form-group">
-                <label for="username">ИМЯ ПОЛЬЗОВАТЕЛЯ:</label>
-                <input type="text" id="username" placeholder="Введите логин">
+                <label for="username">Логин:</label>
+                <input type="text" id="username" autocomplete="off">
             </div>
-            
             <div class="form-group">
-                <label for="password">ПАРОЛЬ:</label>
-                <input type="password" id="password" placeholder="Введите пароль">
+                <label for="password">Пароль:</label>
+                <input type="password" id="password" autocomplete="off">
             </div>
-            
-            <button class="login-btn" onclick="attemptLogin()">ПОДКЛЮЧИТЬСЯ</button>
-            
-            <div id="status-message" class="status-message"></div>
-        </div>
-        
-        <div class="footer">
-            Quantum Access System | Версия 2.4.7 | Защищённое соединение
+            <button class="login-btn" id="login-btn">Войти</button>
+            <div class="error-message" id="error-message">Неверные учетные данные</div>
         </div>
     </div>
 
+    <div class="terminal-container" id="terminal">
+        <div class="terminal-header">
+            <div>SAITO TERMINAL v2.4.1 // [SECURE MODE: ACTIVE]</div>
+            <div>USER: <span id="user-display">GUEST</span></div>
+        </div>
+        <div class="terminal-body" id="terminal-output">
+            <div class="output">Инициализация системы... УСПЕХ</div>
+            <div class="output">Загрузка защищенных модулей... УСПЕХ</div>
+            <div class="output">Подключение к главному серверу... УСПЕХ</div>
+            <div class="output">Введите 'help' для списка команд</div>
+        </div>
+        <div class="terminal-input">
+            <span class="prompt">>></span>
+            <input type="text" id="command-input" autocomplete="off">
+        </div>
+    </div>
+
+    <canvas class="matrix-bg" id="matrix-bg"></canvas>
+    <div class="security-notice">// ВАША АКТИВНОСТЬ МОНИТОРИТСЯ СИСТЕМАМИ БЕЗОПАСНОСТИ</div>
+
     <script>
-        // Фон с эффектом матрицы
+        // Логин система
+        document.getElementById('login-btn').addEventListener('click', function() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === 'Saito' && password === '123Emm123') {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('terminal').style.display = 'flex';
+                document.getElementById('user-display').textContent = username;
+                document.getElementById('command-input').focus();
+            } else {
+                document.getElementById('error-message').style.display = 'block';
+            }
+        });
+        
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('login-btn').click();
+            }
+        });
+
+        // Matrix background effect
         const canvas = document.getElementById('matrix-bg');
         const ctx = canvas.getContext('2d');
         
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         
-        const letters = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const letters = '01010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101';
         const fontSize = 12;
         const columns = canvas.width / fontSize;
         
@@ -258,7 +259,7 @@
             ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            ctx.fillStyle = '#0F0';
+            ctx.fillStyle = '#00ff00';
             ctx.font = `${fontSize}px monospace`;
             
             for (let i = 0; i < drops.length; i++) {
@@ -271,74 +272,131 @@
                 
                 drops[i]++;
             }
-            
-            requestAnimationFrame(drawMatrix);
         }
         
-        drawMatrix();
+        setInterval(drawMatrix, 33);
         
-        // Фокус на поле ввода при загрузке страницы
-        window.onload = function() {
-            document.getElementById('username').focus();
-        };
+        // Терминал функциональность
+        const terminalOutput = document.getElementById('terminal-output');
+        const commandInput = document.getElementById('command-input');
         
-        // Обработка нажатия Enter в поле пароля
-        document.getElementById('password').addEventListener('keypress', function(e) {
+        commandInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                attemptLogin();
+                const command = this.value.trim();
+                this.value = '';
+                
+                addOutput(`<div class="command">>> ${command}</div>`);
+                
+                // Обработка команд
+                if (command === 'help') {
+                    addOutput('<div class="result">Доступные команды:</div>');
+                    addOutput('<div class="result">- help: показать эту справку</div>');
+                    addOutput('<div class="result">- clear: очистить терминал</div>');
+                    addOutput('<div class="result">- python: запуск Python интерпретатора</div>');
+                    addOutput('<div class="result">- sysinfo: информация о системе</div>');
+                    addOutput('<div class="result">- secure: тест безопасности</div>');
+                    addOutput('<div class="result">- exit: выход из системы</div>');
+                } 
+                else if (command === 'clear') {
+                    terminalOutput.innerHTML = '';
+                }
+                else if (command === 'sysinfo') {
+                    addOutput('<div class="result">Система: SAITO OS v2.4.1</div>');
+                    addOutput('<div class="result">Безопасность: УРОВЕНЬ MAXIMUM</div>');
+                    addOutput('<div class="result">Шифрование: AES-512</div>');
+                    addOutput('<div class="result">Статус: ВСЕ СИСТЕМЫ АКТИВНЫ</div>');
+                }
+                else if (command === 'secure') {
+                    addOutput('<div class="result">Запуск диагностики безопасности...</div>');
+                    setTimeout(() => addOutput('<div class="result">Брандмауэр: АКТИВЕН</div>'), 300);
+                    setTimeout(() => addOutput('<div class="result">Обнаружение вторжений: АКТИВНО</div>'), 600);
+                    setTimeout(() => addOutput('<div class="result">Шифрование данных: АКТИВНО</div>'), 900);
+                    setTimeout(() => addOutput('<div class="result">Анонимизация: АКТИВНА</div>'), 1200);
+                    setTimeout(() => addOutput('<div class="result">СТАТУС БЕЗОПАСНОСТИ: МАКСИМАЛЬНЫЙ</div>'), 1500);
+                }
+                else if (command === 'python') {
+                    addOutput('<div class="result">Запуск Python интерпретатора...</div>');
+                    addOutput('<div class="result">Введите код Python для выполнения. Для выхода введите "exit()"</div>');
+                    pythonMode = true;
+                }
+                else if (command === 'exit') {
+                    addOutput('<div class="result">Завершение сеанса...</div>');
+                    setTimeout(() => {
+                        document.getElementById('login-screen').style.display = 'flex';
+                        document.getElementById('terminal').style.display = 'none';
+                        terminalOutput.innerHTML = `
+                            <div class="output">Инициализация системы... УСПЕХ</div>
+                            <div class="output">Загрузка защищенных модулей... УСПЕХ</div>
+                            <div class="output">Подключение к главному серверу... УСПЕХ</div>
+                            <div class="output">Введите 'help' для списка команд</div>
+                        `;
+                    }, 1000);
+                }
+                else if (pythonMode) {
+                    if (command === 'exit()') {
+                        addOutput('<div class="result">Выход из Python интерпретатора</div>');
+                        pythonMode = false;
+                    } else {
+                        try {
+                            // Безопасное выполнение кода Python (эмуляция)
+                            const result = safePythonEval(command);
+                            addOutput(`<div class="result">${result}</div>`);
+                        } catch (error) {
+                            addOutput(`<div class="error">Ошибка: ${error.message}</div>`);
+                        }
+                    }
+                }
+                else {
+                    addOutput(`<div class="error">Неизвестная команда: ${command}. Введите 'help' для списка команд.</div>`);
+                }
+                
+                // Автоскролл вниз
+                terminalOutput.scrollTop = terminalOutput.scrollHeight;
             }
         });
         
-        // Попытка входа в систему
-        function attemptLogin() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const statusMessage = document.getElementById('status-message');
-            
-            if (!username || !password) {
-                statusMessage.innerHTML = 'ОШИБКА: ЗАПОЛНИТЕ ВСЕ ПОЛЯ';
-                statusMessage.className = 'status-message access-denied';
-                return;
-            }
-            
-            statusMessage.innerHTML = 'ПРОВЕРКА УЧЕТНЫХ ДАННЫХ...';
-            statusMessage.className = 'status-message';
-            
-            // Имитация проверки учетных данных
-            setTimeout(() => {
-                // Простая проверка (в реальном приложении нужно использовать безопасные методы)
-                if (username === 'admin' && password === 'quantum') {
-                    statusMessage.innerHTML = 'ДОСТУП РАЗРЕШЕН... ПЕРЕАДРЕСАЦИЯ';
-                    statusMessage.className = 'status-message access-granted';
-                    
-                    // Сохраняем данные о входе
-                    localStorage.setItem('username', username);
-                    localStorage.setItem('loggedIn', 'true');
-                    
-                    // Перенаправление на основную страницу после успешного входа
-                    setTimeout(() => {
-                        window.location.href = 'terminal.html';
-                    }, 1500);
-                } else {
-                    statusMessage.innerHTML = 'ОШИБКА: НЕВЕРНЫЕ УЧЕТНЫЕ ДАННЫЕ';
-                    statusMessage.className = 'status-message access-denied';
-                    
-                    // Анимация отказа в доступе
-                    document.getElementById('password').value = '';
-                    const loginContainer = document.querySelector('.login-container');
-                    loginContainer.classList.add('access-denied');
-                    
-                    setTimeout(() => {
-                        loginContainer.classList.remove('access-denied');
-                    }, 1000);
-                }
-            }, 1500);
+        let pythonMode = false;
+        
+        function addOutput(html) {
+            terminalOutput.innerHTML += html;
         }
         
-        // Изменение размера canvas при изменении размера окна
-        window.addEventListener('resize', function() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        // Безопасная эмуляция Python
+        function safePythonEval(code) {
+            // Ограниченная эмуляция Python для безопасности
+            if (code.includes('import') || code.includes('eval') || code.includes('exec')) {
+                throw new Error('Недопустимая операция');
+            }
+            
+            // Простые математические операции
+            if (/^[\d\s+\-*/().]+$/.test(code)) {
+                try {
+                    return eval(code);
+                } catch (e) {
+                    throw new Error('Синтаксическая ошибка');
+                }
+            }
+            
+            // Простые операции со строками
+            if (code.startsWith('print(') && code.endsWith(')')) {
+                const content = code.substring(6, code.length - 1);
+                return content.replace(/['"]/g, '');
+            }
+            
+            throw new Error('Неподдерживаемая операция в демо-режиме');
+        }
+        
+        // Защита от инспектирования кода
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'U')) {
+                e.preventDefault();
+                addOutput('<div class="error">ОШИБКА БЕЗОПАСНОСТИ: Попытка инспектирования кода</div>');
+            }
+        });
+        
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            addOutput('<div class="error">ОШИБКА БЕЗОПАСНОСТИ: Попытка доступа к контекстному меню</div>');
         });
     </script>
 </body>
