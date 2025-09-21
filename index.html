@@ -150,6 +150,14 @@
             color: #ff0000;
         }
         
+        .system {
+            color: #0088ff;
+        }
+        
+        .warning {
+            color: #ffff00;
+        }
+        
         .blink {
             animation: blink 1s infinite;
         }
@@ -178,6 +186,18 @@
             font-size: 12px;
             color: #008800;
         }
+        
+        #terminal-output::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #terminal-output::-webkit-scrollbar-track {
+            background: #001100;
+        }
+        
+        #terminal-output::-webkit-scrollbar-thumb {
+            background: #00ff00;
+        }
     </style>
 </head>
 <body>
@@ -203,10 +223,10 @@
             <div>USER: <span id="user-display">GUEST</span></div>
         </div>
         <div class="terminal-body" id="terminal-output">
-            <div class="output">Инициализация системы... УСПЕХ</div>
-            <div class="output">Загрузка защищенных модулей... УСПЕХ</div>
-            <div class="output">Подключение к главному серверу... УСПЕХ</div>
-            <div class="output">Введите 'help' для списка команд</div>
+            <div class="output">Инициализация системы... <span class="result">УСПЕХ</span></div>
+            <div class="output">Загрузка защищенных модулей... <span class="result">УСПЕХ</span></div>
+            <div class="output">Подключение к главному серверу... <span class="result">УСПЕХ</span></div>
+            <div class="output">Введите '<span class="command">help</span>' для списка команд</div>
         </div>
         <div class="terminal-input">
             <span class="prompt">>></span>
@@ -228,6 +248,9 @@
                 document.getElementById('terminal').style.display = 'flex';
                 document.getElementById('user-display').textContent = username;
                 document.getElementById('command-input').focus();
+                
+                // Добавляем приветственное сообщение
+                addOutput('<div class="output"><span class="system">Добро пожаловать, ' + username + '. Глобальная сеть ждет ваших команд.</span></div>');
             } else {
                 document.getElementById('error-message').style.display = 'block';
             }
@@ -280,6 +303,12 @@
         const terminalOutput = document.getElementById('terminal-output');
         const commandInput = document.getElementById('command-input');
         
+        let pythonMode = false;
+        let currentMode = 'main';
+        let scanProgress = 0;
+        let hackProgress = 0;
+        let decryptionProgress = 0;
+        
         commandInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 const command = this.value.trim();
@@ -288,83 +317,488 @@
                 addOutput(`<div class="command">>> ${command}</div>`);
                 
                 // Обработка команд
-                if (command === 'help') {
-                    addOutput('<div class="result">Доступные команды:</div>');
-                    addOutput('<div class="result">- help: показать эту справку</div>');
-                    addOutput('<div class="result">- clear: очистить терминал</div>');
-                    addOutput('<div class="result">- python: запуск Python интерпретатора</div>');
-                    addOutput('<div class="result">- sysinfo: информация о системе</div>');
-                    addOutput('<div class="result">- secure: тест безопасности</div>');
-                    addOutput('<div class="result">- exit: выход из системы</div>');
-                } 
-                else if (command === 'clear') {
-                    terminalOutput.innerHTML = '';
-                }
-                else if (command === 'sysinfo') {
-                    addOutput('<div class="result">Система: SAITO OS v2.4.1</div>');
-                    addOutput('<div class="result">Безопасность: УРОВЕНЬ MAXIMUM</div>');
-                    addOutput('<div class="result">Шифрование: AES-512</div>');
-                    addOutput('<div class="result">Статус: ВСЕ СИСТЕМЫ АКТИВНЫ</div>');
-                }
-                else if (command === 'secure') {
-                    addOutput('<div class="result">Запуск диагностики безопасности...</div>');
-                    setTimeout(() => addOutput('<div class="result">Брандмауэр: АКТИВЕН</div>'), 300);
-                    setTimeout(() => addOutput('<div class="result">Обнаружение вторжений: АКТИВНО</div>'), 600);
-                    setTimeout(() => addOutput('<div class="result">Шифрование данных: АКТИВНО</div>'), 900);
-                    setTimeout(() => addOutput('<div class="result">Анонимизация: АКТИВНА</div>'), 1200);
-                    setTimeout(() => addOutput('<div class="result">СТАТУС БЕЗОПАСНОСТИ: МАКСИМАЛЬНЫЙ</div>'), 1500);
-                }
-                else if (command === 'python') {
-                    addOutput('<div class="result">Запуск Python интерпретатора...</div>');
-                    addOutput('<div class="result">Введите код Python для выполнения. Для выхода введите "exit()"</div>');
-                    pythonMode = true;
-                }
-                else if (command === 'exit') {
-                    addOutput('<div class="result">Завершение сеанса...</div>');
-                    setTimeout(() => {
-                        document.getElementById('login-screen').style.display = 'flex';
-                        document.getElementById('terminal').style.display = 'none';
-                        terminalOutput.innerHTML = `
-                            <div class="output">Инициализация системы... УСПЕХ</div>
-                            <div class="output">Загрузка защищенных модулей... УСПЕХ</div>
-                            <div class="output">Подключение к главному серверу... УСПЕХ</div>
-                            <div class="output">Введите 'help' для списка команд</div>
-                        `;
-                    }, 1000);
-                }
-                else if (pythonMode) {
-                    if (command === 'exit()') {
-                        addOutput('<div class="result">Выход из Python интерпретатора</div>');
-                        pythonMode = false;
-                    } else {
-                        try {
-                            // Безопасное выполнение кода Python (эмуляция)
-                            const result = safePythonEval(command);
-                            addOutput(`<div class="result">${result}</div>`);
-                        } catch (error) {
-                            addOutput(`<div class="error">Ошибка: ${error.message}</div>`);
-                        }
-                    }
-                }
-                else {
-                    addOutput(`<div class="error">Неизвестная команда: ${command}. Введите 'help' для списка команд.</div>`);
-                }
+                processCommand(command);
                 
                 // Автоскролл вниз
                 terminalOutput.scrollTop = terminalOutput.scrollHeight;
             }
         });
         
-        let pythonMode = false;
-        
         function addOutput(html) {
             terminalOutput.innerHTML += html;
+        }
+        
+        function processCommand(command) {
+            if (pythonMode) {
+                if (command === 'exit()') {
+                    addOutput('<div class="result">Выход из Python интерпретатора</div>');
+                    pythonMode = false;
+                } else {
+                    try {
+                        // Безопасное выполнение кода Python (эмуляция)
+                        const result = safePythonEval(command);
+                        addOutput(`<div class="result">${result}</div>`);
+                    } catch (error) {
+                        addOutput(`<div class="error">Ошибка: ${error.message}</div>`);
+                    }
+                }
+                return;
+            }
+            
+            const args = command.split(' ');
+            const cmd = args[0].toLowerCase();
+            
+            switch(cmd) {
+                case 'help':
+                    showHelp();
+                    break;
+                case 'clear':
+                    terminalOutput.innerHTML = '';
+                    break;
+                case 'sysinfo':
+                    showSystemInfo();
+                    break;
+                case 'secure':
+                    runSecurityDiagnostics();
+                    break;
+                case 'python':
+                    addOutput('<div class="result">Запуск Python интерпретатора...</div>');
+                    addOutput('<div class="result">Введите код Python для выполнения. Для выхода введите "exit()"</div>');
+                    pythonMode = true;
+                    break;
+                case 'exit':
+                    addOutput('<div class="result">Завершение сеанса...</div>');
+                    setTimeout(() => {
+                        document.getElementById('login-screen').style.display = 'flex';
+                        document.getElementById('terminal').style.display = 'none';
+                        terminalOutput.innerHTML = `
+                            <div class="output">Инициализация системы... <span class="result">УСПЕХ</span></div>
+                            <div class="output">Загрузка защищенных модулей... <span class="result">УСПЕХ</span></div>
+                            <div class="output">Подключение к главному серверу... <span class="result">УСПЕХ</span></div>
+                            <div class="output">Введите '<span class="command">help</span>' для списка команд</div>
+                        `;
+                    }, 1000);
+                    break;
+                case 'scan':
+                    scanNetwork(args[1]);
+                    break;
+                case 'connect':
+                    connectToHost(args[1]);
+                    break;
+                case 'hack':
+                    hackSystem(args[1]);
+                    break;
+                case 'decrypt':
+                    decryptFile(args[1]);
+                    break;
+                case 'encrypt':
+                    encryptFile(args[1]);
+                    break;
+                case 'bf':
+                    bruteForce(args[1]);
+                    break;
+                case 'download':
+                    downloadFile(args[1]);
+                    break;
+                case 'upload':
+                    uploadFile(args[1]);
+                    break;
+                case 'history':
+                    showHistory();
+                    break;
+                case 'whoami':
+                    showUserInfo();
+                    break;
+                case 'pwd':
+                    showCurrentDirectory();
+                    break;
+                case 'ls':
+                case 'dir':
+                    listFiles();
+                    break;
+                case 'cd':
+                    changeDirectory(args[1]);
+                    break;
+                case 'cat':
+                case 'type':
+                    showFileContent(args[1]);
+                    break;
+                case 'rm':
+                case 'del':
+                    deleteFile(args[1]);
+                    break;
+                case 'mkdir':
+                    createDirectory(args[1]);
+                    break;
+                case 'ping':
+                    pingHost(args[1]);
+                    break;
+                case 'tracert':
+                    traceRoute(args[1]);
+                    break;
+                case 'geoip':
+                    geoLocateIP(args[1]);
+                    break;
+                case 'crypto':
+                    showCryptoInfo();
+                    break;
+                case 'proxy':
+                    toggleProxy();
+                    break;
+                case 'firewall':
+                    manageFirewall(args[1]);
+                    break;
+                case 'ports':
+                    showOpenPorts();
+                    break;
+                case 'services':
+                    listServices();
+                    break;
+                case 'reboot':
+                    rebootSystem();
+                    break;
+                case 'shutdown':
+                    shutdownSystem();
+                    break;
+                case 'alias':
+                    createAlias(args[1], args[2]);
+                    break;
+                case 'unlock':
+                    unlockFeature(args[1]);
+                    break;
+                case 'encode':
+                    encodeData(args[1], args[2]);
+                    break;
+                case 'decode':
+                    decodeData(args[1], args[2]);
+                    break;
+                case 'backdoor':
+                    installBackdoor(args[1]);
+                    break;
+                case 'keylog':
+                    toggleKeylogger();
+                    break;
+                case 'worm':
+                    deployWorm(args[1]);
+                    break;
+                case 'trojan':
+                    deployTrojan(args[1]);
+                    break;
+                case ' ransomware':
+                    deployRansomware(args[1]);
+                    break;
+                case 'bitcoin':
+                    mineBitcoin();
+                    break;
+                case 'ddos':
+                    startDDoS(args[1]);
+                    break;
+                case 'vpn':
+                    toggleVPN();
+                    break;
+                case ' stealth':
+                    enableStealthMode();
+                    break;
+                case 'password':
+                    crackPassword(args[1]);
+                    break;
+                case 'sql':
+                    sqlInjection(args[1]);
+                    break;
+                case 'xss':
+                    xssTest(args[1]);
+                    break;
+                case 'phishing':
+                    startPhishing(args[1]);
+                    break;
+                case 'bypass':
+                    bypassSecurity(args[1]);
+                    break;
+                case 'root':
+                    getRootAccess();
+                    break;
+                case 'mask':
+                    maskIdentity();
+                    break;
+                case 'track':
+                    trackUser(args[1]);
+                    break;
+                case ' intercept':
+                    interceptTraffic();
+                    break;
+                case 'spoof':
+                    spoofAddress(args[1]);
+                    break;
+                case 'analyze':
+                    analyzeCode(args[1]);
+                    break;
+                case 'exploit':
+                    exploitVulnerability(args[1]);
+                    break;
+                case 'reverse':
+                    reverseShell(args[1]);
+                    break;
+                case 'botnet':
+                    controlBotnet(args[1]);
+                    break;
+                case 'zero':
+                    useZeroDay(args[1]);
+                    break;
+                case 'journal':
+                    showLogs();
+                    break;
+                case 'encryptfs':
+                    encryptFilesystem();
+                    break;
+                case 'decryptfs':
+                    decryptFilesystem();
+                    break;
+                case 'firewall':
+                    manageFirewall(args[1]);
+                    break;
+                case 'format':
+                    formatDrive(args[1]);
+                    break;
+                case 'ghost':
+                    ghostMode();
+                    break;
+                case 'satellite':
+                    accessSatellite(args[1]);
+                    break;
+                case 'nuclear':
+                    accessNuclearCodes();
+                    break;
+                case 'time':
+                    showTime();
+                    break;
+                case 'date':
+                    showDate();
+                    break;
+                case 'weather':
+                    getWeather(args[1]);
+                    break;
+                case 'calc':
+                    calculate(args.slice(1).join(' '));
+                    break;
+                case 'matrix':
+                    enableMatrixMode();
+                    break;
+                case 'game':
+                    launchGame();
+                    break;
+                case 'music':
+                    playMusic();
+                    break;
+                case ' joke':
+                    tellJoke();
+                    break;
+                case 'quote':
+                    showQuote();
+                    break;
+                case 'hint':
+                    showHint();
+                    break;
+                case 'bonus':
+                    showBonus();
+                    break;
+                case 'secret':
+                    showSecret();
+                    break;
+                case 'easteregg':
+                    showEasterEgg();
+                    break;
+                case '': 
+                    // Пустая команда
+                    break;
+                default:
+                    addOutput(`<div class="error">Неизвестная команда: ${cmd}. Введите '<span class="command">help</span>' для списка команд.</div>`);
+            }
+        }
+        
+        function showHelp() {
+            addOutput('<div class="result">Доступные команды:</div>');
+            addOutput('<div class="result"><span class="command">help</span> - показать эту справку</div>');
+            addOutput('<div class="result"><span class="command">clear</span> - очистить терминал</div>');
+            addOutput('<div class="result"><span class="command">sysinfo</span> - информация о системе</div>');
+            addOutput('<div class="result"><span class="command">secure</span> - тест безопасности</div>');
+            addOutput('<div class="result"><span class="command">python</span> - запуск Python интерпретатора</div>');
+            addOutput('<div class="result"><span class="command">scan [ip]</span> - сканирование сети</div>');
+            addOutput('<div class="result"><span class="command">connect [host]</span> - подключение к хосту</div>');
+            addOutput('<div class="result"><span class="command">hack [target]</span> - взлом системы</div>');
+            addOutput('<div class="result"><span class="command">decrypt [file]</span> - дешифрование файла</div>');
+            addOutput('<div class="result"><span class="command">encrypt [file]</span> - шифрование файла</div>');
+            addOutput('<div class="result"><span class="command">bf [target]</span> - брутфорс атака</div>');
+            addOutput('<div class="result"><span class="command">download [file]</span> - загрузка файла</div>');
+            addOutput('<div class="result"><span class="command">upload [file]</span> - выгрузка файла</div>');
+            addOutput('<div class="result"><span class="command">history</span> - история команд</div>');
+            addOutput('<div class="result"><span class="command">whoami</span> - информация о пользователе</div>');
+            addOutput('<div class="result"><span class="command">pwd</span> - текущая директория</div>');
+            addOutput('<div class="result"><span class="command">ls/dir</span> - список файлов</div>');
+            addOutput('<div class="result"><span class="command">cd [dir]</span> - сменить директорию</div>');
+            addOutput('<div class="result"><span class="command">cat/type [file]</span> - просмотр файла</div>');
+            addOutput('<div class="result"><span class="command">rm/del [file]</span> - удалить файл</div>');
+            addOutput('<div class="result"><span class="command">mkdir [dir]</span> - создать директорию</div>');
+            addOutput('<div class="result"><span class="command">ping [host]</span> - пинг хоста</div>');
+            addOutput('<div class="result"><span class="command">tracert [host]</span> - трассировка маршрута</div>');
+            addOutput('<div class="result"><span class="command">geoip [ip]</span> - геолокация IP</div>');
+            addOutput('<div class="result"><span class="command">crypto</span> - информация о криптосистеме</div>');
+            addOutput('<div class="result"><span class="command">proxy</span> - включить/выключить прокси</div>');
+            addOutput('<div class="result"><span class="command">ports</span> - показать открытые порты</div>');
+            addOutput('<div class="result"><span class="command">services</span> - список сервисов</div>');
+            addOutput('<div class="result"><span class="command">reboot</span> - перезагрузка системы</div>');
+            addOutput('<div class="result"><span class="command">shutdown</span> - выключение системы</div>');
+            addOutput('<div class="result"><span class="command">alias [name] [command]</span> - создать псевдоним</div>');
+            addOutput('<div class="result"><span class="command">unlock [feature]</span> - разблокировать функцию</div>');
+            addOutput('<div class="result"><span class="command">encode [method] [data]</span> - кодировать данные</div>');
+            addOutput('<div class="result"><span class="command">decode [method] [data]</span> - декодировать данные</div>');
+            addOutput('<div class="result"><span class="command">backdoor [target]</span> - установить бэкдор</div>');
+            addOutput('<div class="result"><span class="command">keylog</span> - включить/выключить кейлоггер</div>');
+            addOutput('<div class="result"><span class="command">worm [target]</span> - запустить червя</div>');
+            addOutput('<div class="result"><span class="command">trojan [target]</span> - запустить троян</div>');
+            addOutput('<div class="result"><span class="command">ransomware [target]</span> - запустить ransomware</div>');
+            addOutput('<div class="result"><span class="command">bitcoin</span> - майнить биткоины</div>');
+            addOutput('<div class="result"><span class="command">ddos [target]</span> - DDoS атака</div>');
+            addOutput('<div class="result"><span class="command">vpn</span> - включить/выключить VPN</div>');
+            addOutput('<div class="result"><span class="command">stealth</span> - режим невидимки</div>');
+            addOutput('<div class="result"><span class="command">password [hash]</span> - взломать пароль</div>');
+            addOutput('<div class="result"><span class="command">sql [url]</span> - SQL инъекция</div>');
+            addOutput('<div class="result"><span class="command">xss [url]</span> - XSS тест</div>');
+            addOutput('<div class="result"><span class="command">phishing [target]</span> - фишинг атака</div>');
+            addOutput('<div class="result"><span class="command">bypass [security]</span> - обход защиты</div>');
+            addOutput('<div class="result"><span class="command">root</span> - получить root доступ</div>');
+            addOutput('<div class="result"><span class="command">mask</span> - маскировка личности</div>');
+            addOutput('<div class="result"><span class="command">track [user]</span> - отслеживание пользователя</div>');
+            addOutput('<div class="result"><span class="command">intercept</span> - перехват трафика</div>');
+            addOutput('<div class="result"><span class="command">spoof [ip]</span> - подмена IP</div>');
+            addOutput('<div class="result"><span class="command">analyze [file]</span> - анализ кода</div>');
+            addOutput('<div class="result"><span class="command">exploit [vuln]</span> - использовать уязвимость</div>');
+            addOutput('<div class="result"><span class="command">reverse [ip]</span> - обратная оболочка</div>');
+            addOutput('<div class="result"><span class="command">botnet [command]</span> - управление ботнетом</div>');
+            addOutput('<div class="result"><span class="command">zero [target]</span> - использовать zero-day уязвимость</div>');
+            addOutput('<div class="result"><span class="command">journal</span> - показать логи</div>');
+            addOutput('<div class="result"><span class="command">encryptfs</span> - шифрование файловой системы</div>');
+            addOutput('<div class="result"><span class="command">decryptfs</span> - дешифрование файловой системы</div>');
+            addOutput('<div class="result"><span class="command">firewall [action]</span> - управление фаерволом</div>');
+            addOutput('<div class="result"><span class="command">format [drive]</span> - форматирование диска</div>');
+            addOutput('<div class="result"><span class="command">ghost</span> - режим призрака</div>');
+            addOutput('<div class="result"><span class="command">satellite [id]</span> - доступ к спутнику</div>');
+            addOutput('<div class="result"><span class="command">nuclear</span> - доступ к ядерным кодам</div>');
+            addOutput('<div class="result"><span class="command">time</span> - текущее время</div>');
+            addOutput('<div class="result"><span class="command">date</span> - текущая дата</div>');
+            addOutput('<div class="result"><span class="command">weather [city]</span> - прогноз погоды</div>');
+            addOutput('<div class="result"><span class="command">calc [expression]</span> - калькулятор</div>');
+            addOutput('<div class="result"><span class="command">matrix</span> - режим матрицы</div>');
+            addOutput('<div class="result"><span class="command">game</span> - запустить игру</div>');
+            addOutput('<div class="result"><span class="command">music</span> - включить музыку</div>');
+            addOutput('<div class="result"><span class="command">joke</span> - случайная шутка</div>');
+            addOutput('<div class="result"><span class="command">quote</span> - случайная цитата</div>');
+            addOutput('<div class="result"><span class="command">hint</span> - показать подсказку</div>');
+            addOutput('<div class="result"><span class="command">bonus</span> - бонусная функция</div>');
+            addOutput('<div class="result"><span class="command">secret</span> - секретная команда</div>');
+            addOutput('<div class="result"><span class="command">easteregg</span> - пасхальное яйцо</div>');
+            addOutput('<div class="result"><span class="command">exit</span> - выход из системы</div>');
+        }
+        
+        function showSystemInfo() {
+            addOutput('<div class="result">Система: SAITO OS v2.4.1</div>');
+            addOutput('<div class="result">Ядро: 5.12.7-saito-secure</div>');
+            addOutput('<div class="result">Архитектура: x86_64</div>');
+            addOutput('<div class="result">Память: 16GB DDR4</div>');
+            addOutput('<div class="result">Процессор: Intel Xeon E5-2699 v4 (32 ядер)</div>');
+            addOutput('<div class="result">Хранение: 4TB SSD NVMe</div>');
+            addOutput('<div class="result">Сеть: 10 Гбит/с</div>');
+            addOutput('<div class="result">Безопасность: УРОВЕНЬ MAXIMUM</div>');
+            addOutput('<div class="result">Шифрование: AES-512</div>');
+            addOutput('<div class="result">Статус: ВСЕ СИСТЕМЫ АКТИВНЫ</div>');
+        }
+        
+        function runSecurityDiagnostics() {
+            addOutput('<div class="result">Запуск диагностики безопасности...</div>');
+            setTimeout(() => addOutput('<div class="result">Брандмауэр: <span class="system">АКТИВЕН</span></div>'), 300);
+            setTimeout(() => addOutput('<div class="result">Обнаружение вторжений: <span class="system">АКТИВНО</span></div>'), 600);
+            setTimeout(() => addOutput('<div class="result">Шифрование данных: <span class="system">АКТИВНО</span></div>'), 900);
+            setTimeout(() => addOutput('<div class="result">Анонимизация: <span class="system">АКТИВНА</span></div>'), 1200);
+            setTimeout(() => addOutput('<div class="result">Антивирус: <span class="system">АКТИВЕН</span></div>'), 1500);
+            setTimeout(() => addOutput('<div class="result">Защита от утечек: <span class="system">АКТИВНА</span></div>'), 1800);
+            setTimeout(() => addOutput('<div class="result">СТАТУС БЕЗОПАСНОСТИ: <span class="system">МАКСИМАЛЬНЫЙ</span></div>'), 2100);
+        }
+        
+        function scanNetwork(ip) {
+            if (!ip) ip = '192.168.1.0/24';
+            addOutput(`<div class="result">Сканирование сети ${ip}...</div>`);
+            
+            scanProgress = 0;
+            const scanInterval = setInterval(() => {
+                scanProgress += Math.floor(Math.random() * 10);
+                if (scanProgress >= 100) {
+                    clearInterval(scanInterval);
+                    addOutput('<div class="result">Сканирование завершено.</div>');
+                    addOutput('<div class="result">Найдено устройств: 24</div>');
+                    addOutput('<div class="result">Открытых портов: 137</div>');
+                    addOutput('<div class="result">Уязвимых систем: 3</div>');
+                    addOutput('<div class="result">Рекомендация: Используйте <span class="command">connect [ip]</span> для подключения</div>');
+                } else {
+                    addOutput(`<div class="result">Прогресс: ${scanProgress}%</div>`);
+                }
+            }, 300);
+        }
+        
+        function connectToHost(host) {
+            if (!host) {
+                addOutput('<div class="error">Укажите хост для подключения</div>');
+                return;
+            }
+            
+            addOutput(`<div class="result">Подключение к ${host}...</div>`);
+            
+            setTimeout(() => {
+                if (Math.random() > 0.3) {
+                    addOutput(`<div class="result">Успешное подключение к ${host}</div>`);
+                    addOutput('<div class="result">Доступные действия: просмотр файлов, загрузка, удаление</div>');
+                } else {
+                    addOutput(`<div class="error">Не удалось подключиться к ${host}</div>`);
+                    addOutput('<div class="result">Возможные причины: фаервол, недоступность хоста</div>');
+                }
+            }, 2000);
+        }
+        
+        function hackSystem(target) {
+            if (!target) {
+                addOutput('<div class="error">Укажите цель для взлома</div>');
+                return;
+            }
+            
+            addOutput(`<div class="result">Начало взлома ${target}...</div>`);
+            
+            hackProgress = 0;
+            const hackInterval = setInterval(() => {
+                hackProgress += Math.floor(Math.random() * 8);
+                if (hackProgress >= 100) {
+                    clearInterval(hackInterval);
+                    addOutput('<div class="result">Взлом завершен успешно!</div>');
+                    addOutput('<div class="result">Получен root доступ к системе</div>');
+                    addOutput('<div class="result">Установлен бэкдор на порту 443</div>');
+                    addOutput('<div class="result">Все пароли скомпрометированы</div>');
+                } else {
+                    addOutput(`<div class="result">Прогресс взлома: ${hackProgress}%</div>`);
+                    
+                    if (hackProgress > 30 && hackProgress < 40) {
+                        addOutput('<div class="result">Обход аутентификации...</div>');
+                    } else if (hackProgress > 60 && hackProgress < 70) {
+                        addOutput('<div class="result">Повышение привилегий...</div>');
+                    } else if (hackProgress > 80 && hackProgress < 90) {
+                        addOutput('<div class="result">Установка persistence...</div>');
+                    }
+                }
+            }, 500);
         }
         
         // Безопасная эмуляция Python
         function safePythonEval(code) {
             // Ограниченная эмуляция Python для безопасности
-            if (code.includes('import') || code.includes('eval') || code.includes('exec')) {
+            if (code.includes('import') || code.includes('eval') || code.includes('exec') || 
+                code.includes('open') || code.includes('os.') || code.includes('sys.') ||
+                code.includes('subprocess') || code.includes('__')) {
                 throw new Error('Недопустимая операция');
             }
             
@@ -383,6 +817,16 @@
                 return content.replace(/['"]/g, '');
             }
             
+            // Переменные
+            if (/^[a-zA-Z_][a-zA-Z0-9_]*\s*=/.test(code)) {
+                return 'Переменная установлена';
+            }
+            
+            // Простые условия
+            if (code.includes('if') || code.includes('for') || code.includes('while')) {
+                return 'Условные конструкции выполнены';
+            }
+            
             throw new Error('Неподдерживаемая операция в демо-режиме');
         }
         
@@ -391,12 +835,90 @@
             if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'U')) {
                 e.preventDefault();
                 addOutput('<div class="error">ОШИБКА БЕЗОПАСНОСТИ: Попытка инспектирования кода</div>');
+                
+                // Создаем ложную ошибку для запутывания
+                setTimeout(() => {
+                    const fakeError = document.createElement('div');
+                    fakeError.style.position = 'fixed';
+                    fakeError.style.top = '0';
+                    fakeError.style.left = '0';
+                    fakeError.style.width = '100%';
+                    fakeError.style.height = '100%';
+                    fakeError.style.background = 'blue';
+                    fakeError.style.color = 'white';
+                    fakeError.style.fontSize = '24px';
+                    fakeError.style.display = 'flex';
+                    fakeError.style.justifyContent = 'center';
+                    fakeError.style.alignItems = 'center';
+                    fakeError.style.zIndex = '1000';
+                    fakeError.textContent = 'КРИТИЧЕСКИЙ СБОЙ СИСТЕМЫ';
+                    document.body.appendChild(fakeError);
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(fakeError);
+                    }, 1000);
+                }, 100);
             }
         });
         
         document.addEventListener('contextmenu', function(e) {
             e.preventDefault();
             addOutput('<div class="error">ОШИБКА БЕЗОПАСНОСТИ: Попытка доступа к контекстному меню</div>');
+        });
+        
+        // Дополнительные функции для команд
+        function decryptFile(file) {
+            if (!file) {
+                addOutput('<div class="error">Укажите файл для дешифрования</div>');
+                return;
+            }
+            
+            addOutput(`<div class="result">Дешифрование ${file}...</div>`);
+            
+            decryptionProgress = 0;
+            const decryptInterval = setInterval(() => {
+                decryptionProgress += Math.floor(Math.random() * 15);
+                if (decryptionProgress >= 100) {
+                    clearInterval(decryptInterval);
+                    addOutput(`<div class="result">Файл ${file} успешно дешифрован!</div>`);
+                    addOutput('<div class="result">Содержимое: Важные данные для миссии</div>');
+                } else {
+                    addOutput(`<div class="result">Прогресс дешифрования: ${decryptionProgress}%</div>`);
+                }
+            }, 300);
+        }
+        
+        function bruteForce(target) {
+            if (!target) {
+                addOutput('<div class="error">Укажите цель для брутфорса</div>');
+                return;
+            }
+            
+            addOutput(`<div class="result">Запуск брутфорс атаки на ${target}...</div>`);
+            
+            const passwords = ['123456', 'password', 'admin', 'root', 'qwerty', 'letmein', 'welcome', 'monkey', 'password1', '123456789'];
+            let attempt = 0;
+            
+            const bruteInterval = setInterval(() => {
+                attempt++;
+                const password = passwords[Math.floor(Math.random() * passwords.length)];
+                addOutput(`<div class="result">Попытка ${attempt}: ${password}</div>`);
+                
+                if (attempt >= 10) {
+                    clearInterval(bruteInterval);
+                    if (Math.random() > 0.7) {
+                        addOutput('<div class="result">Пароль найден: secret123</div>');
+                        addOutput('<div class="result">Доступ получен!</div>');
+                    } else {
+                        addOutput('<div class="error">Пароль не найден. Попробуйте другой словарь.</div>');
+                    }
+                }
+            }, 500);
+        }
+        
+        // Инициализация
+        window.addEventListener('load', function() {
+            document.getElementById('username').focus();
         });
     </script>
 </body>
